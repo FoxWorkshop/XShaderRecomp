@@ -1,0 +1,110 @@
+#include "common_vs.hlsli"
+
+struct VS_INPUT
+{
+    float4 iPos : TEXCOORD0; // position
+    float4 weights : TEXCOORD1; // weights
+    int2 boneIndice : TEXCOORD2; // bone indices 
+    float4 normal : TEXCOORD3; // normal
+    float4 v4 : TEXCOORD4;
+    float4 uvs : TEXCOORD5; // UVs
+    float4 v[10] : TEXCOORD6;
+};
+
+
+struct VS_OUTPUT // Declared identical to pixel shader input (see PS_INPUT)
+{
+    float4 oPos : SV_Position; // Homogeneous clip space position
+    float4 oD0 : COLOR0; // Primary color (front-facing)
+    float4 oD1 : COLOR1; // Secondary color (front-facing)
+    float oFog : FOG; // Fog coordinate
+    float oPts : PSIZE; // Point size
+    float4 oB0 : TEXCOORD4; // Back-facing primary color
+    float4 oB1 : TEXCOORD5; // Back-facing secondary color
+    float4 oT0 : TEXCOORD0; // Texture coordinate set 0
+    float4 oT1 : TEXCOORD1; // Texture coordinate set 1
+    float4 oT2 : TEXCOORD2; // Texture coordinate set 2
+    float4 oT3 : TEXCOORD3; // Texture coordinate set 3
+};
+
+
+VS_OUTPUT main(VS_INPUT xIn)
+{  
+	// Output variables
+    float4 oPos, oD0, oD1, oB0, oB1, oT0, oT1, oT2, oT3;
+    oPos = oD0 = oD1 = oB0 = oB1 = oT0 = oT1 = oT2 = oT3 = float4(0, 0, 0, 1); // Pre-initialize w component of outputs to 1
+
+	// Single component outputs
+    float4 oFog, oPts; // x is write-only on Xbox. Use float4 as some games use incorrect masks
+    oFog = 1; // Default to no fog. 
+    oPts = 0;
+
+	// Address (index) register
+    
+    int1 a0 = 0;
+
+	// Temporary registers
+    float4 r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11;
+    r0 = r1 = r2 = r3 = r4 = r5 = r6 = r7 = r8 = r9 = r10 = r11 = float4(0, 0, 0, 0);
+#define r12 oPos // oPos and r12 are two ways of accessing the same register on Xbox
+
+	// Input registers
+    float4 v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15;
+
+	// Unpack 16 flags from 4 float4 constant registers
+    float vRegisterDefaultFlags[16] = (float[16]) vRegisterDefaultFlagsPacked;
+
+//#define init_v(i) v##i = lerp(xIn.v[i], vRegisterDefaultValues[i], vRegisterDefaultFlags[i]);
+    
+    #define init_v(j, i) v##j = lerp(xIn.v[i], vRegisterDefaultValues[j], vRegisterDefaultFlags[j]);
+	// Note : unroll manually instead of for-loop, because of the ## concatenation
+    
+
+    
+    init_v(6, 0);
+    init_v(7, 1);
+	init_v(8, 2);
+    init_v(9, 3);
+    init_v(10, 4);
+    init_v(11, 5);
+	init_v(12, 6);
+	init_v(13, 7);
+	init_v(14, 8);
+	init_v(15, 9);
+    
+    v0 = lerp(xIn.iPos, vRegisterDefaultValues[0], vRegisterDefaultFlags[0]);
+    v1 = lerp(xIn.weights, vRegisterDefaultValues[1], vRegisterDefaultFlags[1]);
+
+    v2 = float4((float) xIn.boneIndice.x, (float) xIn.boneIndice.y, 0.0f, 0.0f);
+  
+    v3 = lerp(xIn.normal, vRegisterDefaultValues[3], vRegisterDefaultFlags[3]);
+    v4 = lerp(xIn.v4, vRegisterDefaultValues[4], vRegisterDefaultFlags[4]);
+    v5 = lerp(xIn.uvs, vRegisterDefaultValues[5], vRegisterDefaultFlags[5]);
+
+	// Temp variable for paired VS instruction
+    float4 temp;
+
+	// Xbox shader program will be inserted here
+	// <XBOX SHADER PROGRAM GOES HERE>
+	// End Xbox shader program
+
+	// Copy variables to output struct
+    VS_OUTPUT xOut;
+    
+
+
+    xOut.oPos = reverseScreenspaceTransform(oPos);
+    xOut.oD0 = saturate(oD0);
+    xOut.oD1 = saturate(oD1);
+    xOut.oFog = oFog.x; // Note : Xbox clamps fog in pixel shader -> *NEEDS TESTING* /was oFog.x 
+    xOut.oPts = oPts.x;
+    xOut.oB0 = saturate(oB0);
+    xOut.oB1 = saturate(oB1);
+	// Scale textures (TODO : or should we apply this to the input register values?)
+    xOut.oT0 = oT0 / xboxTextureScale[0];
+    xOut.oT1 = oT1 / xboxTextureScale[1];
+    xOut.oT2 = oT2 / xboxTextureScale[2];
+    xOut.oT3 = oT3 / xboxTextureScale[3];
+    
+    return xOut;
+}

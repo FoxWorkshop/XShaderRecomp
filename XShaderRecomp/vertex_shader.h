@@ -1,0 +1,190 @@
+
+#ifndef XBVERTEXSHADER_H
+#define XBVERTEXSHADER_H
+
+
+#include <vector>
+#include <future>
+
+#define X_VSH_INSTRUCTION_SIZE        4
+#define X_D3DSCM_CORRECTION                 96 // Add 96 to arrive at the range 0..191 (instead of -96..95)
+#define X_D3DVS_CONSTREG_COUNT              192
+
+// Host vertex shader counts
+#define VSH_VS11_MAX_INSTRUCTION_COUNT 128
+#define VSH_VS2X_MAX_INSTRUCTION_COUNT 256
+#define VSH_VS30_MAX_INSTRUCTION_COUNT 512
+
+#define VSH_MAX_INTERMEDIATE_COUNT (X_VSH_MAX_INSTRUCTION_COUNT * 3) // The maximum number of shader function slots
+
+typedef struct _CxbxVertexShaderStreamElement
+{
+	uint32_t XboxType; // The stream element data type (xbox)
+	uint32_t XboxByteSize; // The stream element data size (xbox)
+	uint8_t HostDataType; // The stream element data type (pc)
+	uint32_t HostByteSize; // The stream element data size (pc)
+}
+CxbxVertexShaderStreamElement;
+
+/* See host typedef struct _D3DVERTEXELEMENT9
+{
+	WORD    Stream;     // Stream index
+	WORD    Offset;     // Offset in the stream in bytes
+	BYTE    Type;       // Data type
+	BYTE    Method;     // Processing method
+	BYTE    Usage;      // Semantics
+	BYTE    UsageIndex; // Semantic index
+} D3DVERTEXELEMENT9, *LPD3DVERTEXELEMENT9;
+*/
+
+
+
+enum class VertexShaderMode {
+	FixedFunction,
+	// When titles use Xbox fixed function with pre-transformed vertices
+	// it actually uses a special "passthrough" shader program
+	Passthrough,
+	ShaderProgram
+};
+
+extern VertexShaderMode g_Xbox_VertexShaderMode;
+extern bool g_UseFixedFunctionVertexShader;
+
+// Intermediate vertex shader structures
+
+enum VSH_OREG_NAME {
+	OREG_OPOS,    //  0
+	OREG_UNUSED1, //  1
+	OREG_UNUSED2, //  2
+	OREG_OD0,     //  3
+	OREG_OD1,     //  4
+	OREG_OFOG,    //  5
+	OREG_OPTS,    //  6
+	OREG_OB0,     //  7
+	OREG_OB1,     //  8
+	OREG_OT0,     //  9
+	OREG_OT1,     // 10
+	OREG_OT2,     // 11
+	OREG_OT3,     // 12
+	OREG_UNUSED3, // 13
+	OREG_UNUSED4, // 14
+	OREG_A0X      // 15 - all values of the 4 bits are used
+};
+
+static const int MASK_X = 0x008;
+static const int MASK_Y = 0x004;
+static const int MASK_Z = 0x002;
+static const int MASK_W = 0x001;
+
+enum VSH_ILU { // Dxbx note : ILU stands for 'Inverse Logic Unit' opcodes
+	ILU_NOP = 0,
+	ILU_MOV,
+	ILU_RCP,
+	ILU_RCC,
+	ILU_RSQ,
+	ILU_EXP,
+	ILU_LOG,
+	ILU_LIT // = 7 - all values of the 3 bits are used
+};
+
+enum VSH_MAC { // Dxbx note : MAC stands for 'Multiply And Accumulate' opcodes
+	MAC_NOP = 0,
+	MAC_MOV,
+	MAC_MUL,
+	MAC_ADD,
+	MAC_MAD,
+	MAC_DP3,
+	MAC_DPH,
+	MAC_DP4,
+	MAC_DST,
+	MAC_MIN,
+	MAC_MAX,
+	MAC_SLT,
+	MAC_SGE,
+	MAC_ARL
+	// ??? 14
+	// ??? 15 - 2 values of the 4 bits are undefined
+};
+
+enum VSH_IMD_DEST_TYPE {
+	IMD_DEST_C,
+	IMD_DEST_R,
+	IMD_DEST_O,
+	IMD_DEST_A0X
+};
+
+typedef struct {
+	VSH_IMD_DEST_TYPE Type;
+	int16_t           Address;
+	int8_t            Mask; // If 0 skip writing to this output
+} VSH_IMD_DEST;
+
+enum VSH_SWIZZLE {
+	SWIZZLE_X = 0,
+	SWIZZLE_Y,
+	SWIZZLE_Z,
+	SWIZZLE_W
+};
+
+enum VSH_IMD_PARAMETER_TYPE {
+	PARAM_UNKNOWN = 0,
+	PARAM_R,          // Temporary (scRatch) registers
+	PARAM_V,          // Vertex registers
+	PARAM_C,          // Constant registers, set by SetVertexShaderConstant
+	PARAM_O // = 0??
+};
+
+typedef struct {
+	VSH_IMD_PARAMETER_TYPE  Type;   // Parameter type, R, V or C
+	bool                Neg;             // true if negated, false if not
+	VSH_SWIZZLE         Swizzle[4];      // The four swizzles
+	int16_t             Address;         // Register address
+} VSH_IMD_PARAMETER;
+
+typedef struct {
+	VSH_ILU Opcode;
+	VSH_IMD_DEST Dest;
+	VSH_IMD_PARAMETER Parameter;
+} VSH_IMD_ILU_OP;
+
+typedef struct {
+	VSH_MAC Opcode;
+	VSH_IMD_DEST Dest;
+	uint8_t ParamCount;
+	VSH_IMD_PARAMETER Parameters[3];
+} VSH_IMD_MAC_OP;
+
+enum VSH_IMD_OREG_SOURCE {
+	SRC_MAC,
+	SRC_ILU,
+};
+
+// Intermediate decoded VSH instruction
+// Up to two operations (MAC and ILU)
+// Writes to up to 3 destination registers
+// One dest per op + one output register
+typedef struct {
+	VSH_IMD_MAC_OP MAC;
+	VSH_IMD_ILU_OP ILU;
+
+	VSH_IMD_OREG_SOURCE ORegSource;
+	VSH_IMD_DEST ORegDest;
+
+	// True if the constant input C should use the index register a0
+	// c[a0.x + n]
+	bool IndexesWithA0_X;
+} VSH_IMD_INSTR;
+
+typedef struct {
+	std::vector<VSH_IMD_INSTR> Instructions;
+} IntermediateVertexShader;
+
+// parse xbox vertex shader function into an intermediate format
+extern void ParseVshFunction
+(
+	DWORD* pXboxFunction,
+	IntermediateVertexShader* pShader
+);
+
+
+#endif
