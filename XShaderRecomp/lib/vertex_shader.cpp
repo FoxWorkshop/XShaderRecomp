@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+std::string commonVertexShaderHlsl;
+
 static const char* vs_model_ = "vs_6_0";
 
 // ****************************************************************************
@@ -598,17 +600,26 @@ void CompileVertexShader
 
 	// Combine the shader template with the shader program
 	auto hlsl_stream = std::stringstream();
+
+	std::string common = g_ShaderSources.vertexShaderCommon;
+	std::string hlslHeader = g_ShaderSources.vertexShaderTemplateHlsl[type][0]; 
+	std::string hlslFooter = g_ShaderSources.vertexShaderTemplateHlsl[type][1];
+
+	//hlsl_stream << g_ShaderSources.vertexShaderCommon << '\n' << '\n';
 	hlsl_stream << g_ShaderSources.vertexShaderTemplateHlsl[type][0]; // Start with the HLSL template header
-	BuildShader(pIntermediateShader, hlsl_stream);
+	BuildShader(pIntermediateShader, hlsl_stream); //insert shader program
 	hlsl_stream << g_ShaderSources.vertexShaderTemplateHlsl[type][1]; // Finish with the HLSL template footer
-	std::string hlsl_str = hlsl_stream.str();
+
+
 
 	if (exportHLSL)
 	{
+
+		std::string hlsl_streamExport = "#include \"common_vs.hlsli\"\n\n";
+		hlsl_streamExport += hlsl_stream.str();
 		static int count;
 		//printf("Create Vertex Shader ID %d\n", count);
-		std::string shaderFolder = GetUserDataDirectory().string() + "/Shaders";
-		int nError = 0;
+		std::string shaderFolder = GetUserDataDirectory().string() + "/XShaderRecomp/out/";
 
 		std::filesystem::create_directories(shaderFolder);
 	
@@ -616,15 +627,18 @@ void CompileVertexShader
 		{
 			std::string shaderName = shaderFolder + "/VertexShader_" + std::to_string(count++) + ".hlsl";
 			std::ofstream  outFile2(shaderName, std::ios::app);
-			outFile2 << hlsl_str << '\n';
+			outFile2 << hlsl_streamExport << '\n';
 			outFile2.close();
 		}
 
 	}
 
+	hlsl_stream.str().insert(0, common);
+
+	std::string hlsl_final = hlsl_stream.str();
 	std::string s = template_vs[type] + ".hlsl";
 	const char* notionalSourceName = s.c_str();
-	CompileShader(hlsl_str, vs_model_, ppHostShader, notionalSourceName);
+	CompileShader(hlsl_final, vs_model_, ppHostShader, notionalSourceName);
 
 }
 

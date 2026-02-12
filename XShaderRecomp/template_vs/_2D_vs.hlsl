@@ -1,4 +1,3 @@
-#include "common_vs.hlsli"
 
 //2D Vertex Shaders handle menu, hud, full screen quad for render target swap etc.
 

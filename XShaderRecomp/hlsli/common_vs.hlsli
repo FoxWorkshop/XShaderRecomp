@@ -5,7 +5,7 @@
 cbuffer VertexShaderConstants : register(b0, space4)
 {
     float4 vs_consts[X_D3DVS_CONSTREG_COUNT] : packoffset(c0); // Xbox constant registers (// c0 -> c191) 
-    float4 vRegisterDefaultValues[16] : packoffset(c192); //vertex attribute (see SetFixedFunctionDefaultVertexAttributes)
+    float4 vRegisterDefaultValues[16] : packoffset(c192); //vertex attribute (it seems to work if those are empty see SetFixedFunctionDefaultVertexAttributes)
     float4 vRegisterDefaultFlagsPacked[4] : packoffset(c208); // Default values for vertex registers, and whether to use them (see UpdateHostVertexDeclaration function)
     float4 xboxScreenspaceScale : packoffset(c212);
     float4 xboxScreenspaceOffset : packoffset(c213);

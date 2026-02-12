@@ -55,6 +55,8 @@ IDxcBlob* DxcCompiler::compile(const std::string& shaderSource, bool compilePixe
 
     args[argCount++] = L"-Qstrip_debug";
 
+    args[argCount++] = L"-I hlsl";
+
 #ifdef UNLEASHED_RECOMP
     args[argCount++] = L"-DUNLEASHED_RECOMP";
 #endif
@@ -103,7 +105,7 @@ IDxcBlob* DxcCompiler::compile(const std::string& shaderSource, bool compilePixe
 
 IDxcBlob* DxcCompiler::compileWithProfile(const std::string& shaderSource, const char* shader_profile, bool compileSpirv)
 {
-    bool isPixelShader = (strncmp(shader_profile, "ps_", 3) == 0);
+    bool isPixelShader = (strncmp(shader_profile, "ps_", 6) == 0);
     bool isLibrary = (strncmp(shader_profile, "lib_", 4) == 0);
 
     return compile(shaderSource, isPixelShader, isLibrary, compileSpirv);

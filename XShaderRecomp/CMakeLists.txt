@@ -9,6 +9,7 @@ set(SMOLV_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/smol-v/source")
 file(GLOB SHADER_TEMPLATES
     ${CMAKE_CURRENT_SOURCE_DIR}/template_vs/*.hlsl
     ${CMAKE_CURRENT_SOURCE_DIR}/template_ps/*.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/hlsli/*.hlsli
 )
 
 set(GENERATED_SHADER_HEADER

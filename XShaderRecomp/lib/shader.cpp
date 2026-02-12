@@ -54,7 +54,7 @@ void ShaderSources::LoadShadersFromDisk()
 
 
 	// Pixel Shader Template
-
+	this->pixelShaderCommon = XShaderRecomp::Templates::common_ps;
 	{
 
 
@@ -85,6 +85,8 @@ void ShaderSources::LoadShadersFromDisk()
 
 
 	// Vertex Shader Template
+	this->vertexShaderCommon = XShaderRecomp::Templates::common_vs;
+
 	for (int type = 0; type < VertexShaderTypeMax; type++)
 	{
 		std::string hlsl = template_vs[type];

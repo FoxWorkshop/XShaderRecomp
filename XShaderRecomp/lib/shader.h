@@ -144,13 +144,18 @@ X_D3DRESOURCETYPE;
 
 struct ShaderSources {
     // Pixel Shader
+	std::string pixelShaderCommon;
     std::string pixelShaderTemplateHlsl[3];
 
     std::string fixedFunctionPixelShaderHlsl;
     std::string fixedFunctionPixelShaderPath;
 
+
+
     // Vertex Shader
+    std::string vertexShaderCommon;
     std::string vertexShaderTemplateHlsl[VertexShaderTypeMax][2];
+
 
     std::string fixedFunctionVertexShaderHlsl;
     std::string fixedFunctionVertexShaderPath;
