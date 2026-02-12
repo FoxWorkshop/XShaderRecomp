@@ -44,7 +44,7 @@ add_library(XShaderRecompLib STATIC
     "lib/vertex_shader.h"
     "lib/pixel_shader.cpp"
     "lib/pixel_shader.h"
-    "lib/include/api.h"
+    "lib/include/xshader_api.h"
     "${SMOLV_SOURCE_DIR}/smolv.cpp"
 )
 

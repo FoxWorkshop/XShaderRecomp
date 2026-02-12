@@ -195,7 +195,7 @@ namespace XboxVertexShaderDecoder
 		// First get the instruction(s).
 		VSH_ILU ILU = (VSH_ILU)VshGetField(pShaderToken, FLD_ILU);
 		VSH_MAC MAC = (VSH_MAC)VshGetField(pShaderToken, FLD_MAC);
-		if (MAC > MAC_ARL) 
+		if (MAC > MAC_ARL)
 			printf("Unknown MAC\n");
 
 		// MAC,ILU output R register
@@ -579,11 +579,12 @@ extern HRESULT CompileShader
 
 #include <fstream>
 // recompile xbox vertex shader function
- void CompileVertexShader
+void CompileVertexShader
 (
 	IntermediateVertexShader* pIntermediateShader,
 	IDxcBlob** ppHostShader,
-	const int32_t type)
+	const int32_t type,
+	bool exportHLSL)
 {
 	assert(pIntermediateShader->Instructions.size() > 0);
 
@@ -594,16 +595,18 @@ extern HRESULT CompileShader
 	hlsl_stream << g_ShaderSources.vertexShaderTemplateHlsl[type][1]; // Finish with the HLSL template footer
 	std::string hlsl_str = hlsl_stream.str();
 
-#ifdef _DEBUG
-	static int count;
-	//printf("Create Vertex Shader ID %d\n", count);
-	std::string debugName = "VertexShader" + std::to_string(count++) + (std::string)"_debug.txt";
-	std::ofstream  outFile2(debugName, std::ios::app);
-	//outFile2 << std::hex << shaderHash << '\n' << '\n';
+	if (exportHLSL)
+	{
+		static int count;
+		//printf("Create Vertex Shader ID %d\n", count);
+		std::string debugName = "VertexShader" + std::to_string(count++) + (std::string)".hlsl";
+		std::ofstream  outFile2(debugName, std::ios::app);
+		//outFile2 << std::hex << shaderHash << '\n' << '\n';
 
-	outFile2 << hlsl_str << '\n';
-	outFile2.close();
-#endif
+		outFile2 << hlsl_str << '\n';
+		outFile2.close();
+
+	}
 
 	std::string s = template_vs[type] + ".hlsl";
 	const char* notionalSourceName = s.c_str();
@@ -612,77 +615,120 @@ extern HRESULT CompileShader
 }
 
 
- IDxcBlob* AsyncCreateVertexShader(IntermediateVertexShader intermediateShader) {
-	 IDxcBlob* pCompiledShader;
-
-	 CompileVertexShader(
-		 &intermediateShader,
-		 &pCompiledShader, 
-		 0//for now default to 0 we will add detection later through vertex declaration and instruction analysis
-	 );
+Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(IntermediateVertexShader intermediateShader, bool exportHLSL) {
 
 
-	 return pCompiledShader;
- }
+	Microsoft::WRL::ComPtr<IDxcBlob> pCompiledShader;
+	IDxcBlob* rawPtr = nullptr;
 
- struct LazyVertexShader {
-	 bool isReady = false;
+	CompileVertexShader(
+		&intermediateShader,
+		&pCompiledShader,
+		0, //for now default to 0 we will add detection later through vertex declaration and instruction analysis
+		exportHLSL
+	);
 
-	 void* pHostVertexShader = nullptr;
 
-	 // TODO when is it a good idea to releas eshaders?
-	 int referenceCount = 0;
-	 std::vector<uint8_t> bytecode;
-	 std::future<Microsoft::WRL::ComPtr<IDxcBlob>> compileResult;
-	 // TODO persist shaders to disk
-	 // ShaderVersion?
-	 // OptimizationLevel?
- };
+	pCompiledShader.Attach(rawPtr); // Attach the raw pointer to the ComPtr, taking ownership of it
 
- extern void ParseVshFunction
- (
-	 // Pointer to raw Xbox vertex shader instruction slots
-	 DWORD* pXboxFunction,
-	 IntermediateVertexShader* pShader
- )
- {
-	 // Decode the vertex shader program tokens into an intermediate representation
-	 auto pCurToken = (uint32_t*)pXboxFunction;
 
-	 // Decode until we hit a token marked final
-	 // Note : CxbxSetVertexShaderSlots makes sure this always stops
-	 // after X_VSH_MAX_INSTRUCTION_COUNT, by setting FLD_FINAL in there.
-	 while (XboxVertexShaderDecoder::VshConvertToIntermediate(pCurToken, pShader)) {
-		 pCurToken += X_VSH_INSTRUCTION_SIZE;
-	 }
- }
+	return pCompiledShader;
+}
 
-void CreateShader(uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, uint8_t* outData) 
+struct LazyVertexShader {
+	bool isReady = false;
+	void* pHostVertexShader = nullptr;
+	int referenceCount = 0;
+	std::vector<uint8_t> bytecode;
+	// Store the compiled blob directly instead of future
+	Microsoft::WRL::ComPtr<IDxcBlob> compiledBlob;
+};
+
+class ShaderCache {
+public:
+	static ShaderCache& Instance() {
+		static ShaderCache instance;
+		return instance;
+	}
+
+	LazyVertexShader* AddShader(LazyVertexShader&& shader) {
+		std::lock_guard<std::mutex> lock(mutex_);
+		shaders_.push_back(std::move(shader));
+		return &shaders_.back();
+	}
+
+	void Clear() {
+		std::lock_guard<std::mutex> lock(mutex_);
+		shaders_.clear();
+	}
+
+private:
+	std::vector<LazyVertexShader> shaders_;
+	std::mutex mutex_;
+};
+
+extern void ParseVshFunction
+(
+	// Pointer to raw Xbox vertex shader instruction slots
+	DWORD* pXboxFunction,
+	IntermediateVertexShader* pShader
+)
 {
-	 IntermediateVertexShader intermediateShader;
+	// Decode the vertex shader program tokens into an intermediate representation
+	auto pCurToken = (uint32_t*)pXboxFunction;
 
-	 *pXboxFunctionSize = GetVshFunctionSize(pXboxFunction);
+	// Decode until we hit a token marked final
+	// Note : CxbxSetVertexShaderSlots makes sure this always stops
+	// after X_VSH_MAX_INSTRUCTION_COUNT, by setting FLD_FINAL in there.
+	while (XboxVertexShaderDecoder::VshConvertToIntermediate(pCurToken, pShader)) {
+		pCurToken += X_VSH_INSTRUCTION_SIZE;
+	}
+}
 
+const uint8_t* CreateRecompiledShader(uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool exportHLSL)
+{
+	IntermediateVertexShader intermediateShader;
 
-	 // Parse into intermediate format
+	*pXboxFunctionSize = GetVshFunctionSize(pXboxFunction);
+
+	// Parse into intermediate format
 	ParseVshFunction((DWORD*)pXboxFunction, &intermediateShader);
 
-	 // We're going to create a new shader
-	 auto newShader = LazyVertexShader();
-	 newShader.referenceCount = 1;
+	// We're going to create a new shader
+	auto newShader = LazyVertexShader();
+	newShader.referenceCount = 1;
 
-	 if (!newShader.isReady && newShader.compileResult.valid() && newShader.compileResult.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
-	 {
-		 auto blob = newShader.compileResult.get();
+	if (intermediateShader.Instructions.empty() == false)
+	{
+		// Use std::async with the fixed function
+		auto compileResult = std::async(
+			std::launch::async,
+			AsyncCreateVertexShader,
+			std::move(intermediateShader),  // Move to avoid copy issues
+			exportHLSL
+		);
 
-		 newShader.bytecode.resize(blob->GetBufferSize());
-		 memcpy(newShader.bytecode.data(),
-			 blob->GetBufferPointer(),
-			 blob->GetBufferSize());
+		newShader.compiledBlob = compileResult.get();
 
-		 newShader.isReady = true;
-	 }
+		// Copy to bytecode buffer
+		newShader.bytecode.resize(newShader.compiledBlob->GetBufferSize());
+		memcpy(
+			newShader.bytecode.data(),
+			newShader.compiledBlob->GetBufferPointer(),
+			newShader.compiledBlob->GetBufferSize()
+		);
+		newShader.isReady = true;
 
-	 outData = newShader.bytecode.data();
-	 *outSize = newShader.bytecode.size();
- }
+		// Store in library-owned cache
+		auto* cachedShader = ShaderCache::Instance().AddShader(std::move(newShader));
+
+		*outSize = cachedShader->bytecode.size();
+		return cachedShader->bytecode.data();  // Return pointer to library-owned memory
+	}
+	else
+	{
+		printf("[XShaderRecomp] WARNING: Empty vertex shader function\n");
+	}
+
+	return nullptr;
+}
