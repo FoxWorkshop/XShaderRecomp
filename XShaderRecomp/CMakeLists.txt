@@ -29,44 +29,68 @@ foreach(shader ${SHADER_TEMPLATES})
 endforeach()
 file(APPEND ${GENERATED_SHADER_HEADER} "}\n")
 
-add_library(XShaderRecomp STATIC
-    constant_table.h
-    dxc_compiler.cpp
-    dxc_compiler.h
-    pch.h
-    shader.cpp
-    shader.h
-    shader_code.h
-    shader_recompiler.cpp
-    shader_recompiler.h
-    vertex_shader.cpp 
-    vertex_shader.h
-    pixel_shader.cpp
-    pixel_shader.h
-    "include/api.h"
-    "${SMOLV_SOURCE_DIR}/smolv.cpp")
+add_library(XShaderRecompLib STATIC
+    "lib/constant_table.h"
+    "lib/dxc_compiler.cpp"
+    "lib/dxc_compiler.h"
+    
+    "lib/pch.h"
+    "lib/shader.cpp"
+    "lib/shader.h"
+    "lib/shader_code.h"
+    "lib/shader_recompiler.cpp"
+    "lib/shader_recompiler.h"
+    "lib/vertex_shader.cpp" 
+    "lib/vertex_shader.h"
+    "lib/pixel_shader.cpp"
+    "lib/pixel_shader.h"
+    "lib/include/api.h"
+    "${SMOLV_SOURCE_DIR}/smolv.cpp"
+)
 
-target_link_libraries(XShaderRecomp PRIVATE
+
+
+target_link_libraries(XShaderRecompLib PRIVATE
     Microsoft::DirectXShaderCompiler
     xxHash::xxhash
     libzstd_static
-    fmt::fmt)
-
-target_include_directories(XShaderRecomp
-    PRIVATE ${SMOLV_SOURCE_DIR}
-    PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
+    fmt::fmt
 )
 
-target_precompile_headers(XShaderRecomp PRIVATE pch.h)
+
+# Tool executable
+add_executable(XShaderRecompTool
+    tool/main.cpp
+)
+
+target_link_libraries(XShaderRecompTool
+    PRIVATE XShaderRecompLib
+)
+
+
+
+target_include_directories(XShaderRecompLib
+    PUBLIC 
+        lib
+        ${CMAKE_CURRENT_BINARY_DIR}
+    PRIVATE 
+        ${SMOLV_SOURCE_DIR}
+    
+)
+
+target_precompile_headers(XShaderRecompLib PRIVATE lib/pch.h)
+
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_compile_options(XShaderRecomp PRIVATE -Wno-switch -Wno-unused-variable -Wno-null-arithmetic -fms-extensions)
+    target_compile_options(XShaderRecompLib PRIVATE -Wno-switch -Wno-unused-variable -Wno-null-arithmetic -fms-extensions)
+    target_compile_options(XShaderRecompTool PRIVATE -Wno-switch -Wno-unused-variable -Wno-null-arithmetic -fms-extensions)
 
     include(CheckCXXSymbolExists)
     check_cxx_symbol_exists(_LIBCPP_VERSION version LIBCPP)
     if(LIBCPP)
         # Allows using std::execution
-        target_compile_options(XShaderRecomp PRIVATE -fexperimental-library)
+        target_compile_options(XShaderRecompLib PRIVATE -fexperimental-library)
+        target_compile_options(XShaderRecompTool PRIVATE -fexperimental-library)
     endif()
 endif()
 
@@ -79,6 +103,6 @@ endif()
 #endif()
 
 if (XSHADER_RECOMP_DXIL)
-    target_compile_definitions(XShaderRecomp PRIVATE XSHADER_RECOMP_DXIL)
-    target_link_libraries(XShaderRecomp PRIVATE Microsoft::DXIL)
+    target_compile_definitions(XShaderRecompLib PRIVATE XSHADER_RECOMP_DXIL)
+    target_link_libraries(XShaderRecompLib PRIVATE Microsoft::DXIL)
 endif()

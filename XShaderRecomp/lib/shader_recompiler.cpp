@@ -1155,7 +1155,7 @@ void ShaderRecompiler::recompile(const uint8_t* shaderData, const std::string_vi
                 uint32_t tailCount = (isPixelShader ? 224 : 256) - constantInfo->registerIndex;
 
                 println("#define {}(INDEX) select((INDEX) < {}, vk::RawBufferLoad<float4>(g_PushConstants.{}ShaderConstants + ({} + min(INDEX, {})) * 16, 0x10), 0.0)",
-                    constantName, tailCount, shaderName, constantInfo->registerIndex.get(), tailCount - 1);
+                    constantName, tailCount, shaderName, constantInfo->registerIndex, tailCount - 1);
             }
             else
             {
@@ -1204,9 +1204,9 @@ void ShaderRecompiler::recompile(const uint8_t* shaderData, const std::string_vi
             print("\tfloat4 {}", constantName);
 
             if (constantInfo->registerCount > 1)
-                print("[{}]", constantInfo->registerCount.get());
+                print("[{}]", constantInfo->registerCount);
 
-            println(" : packoffset(c{});", constantInfo->registerIndex.get());
+            println(" : packoffset(c{});", constantInfo->registerIndex);
 
             if (constantInfo->registerCount > 1)
             {
@@ -1378,11 +1378,11 @@ void ShaderRecompiler::recompile(const uint8_t* shaderData, const std::string_vi
         while (*definitions != 0)
         {
             auto definition = reinterpret_cast<const Float4Definition*>(definitions);
-            auto value = reinterpret_cast<const be<uint32_t>*>(shaderData + shaderContainer->virtualSize + definition->physicalOffset);
+            auto value = reinterpret_cast<const uint32_t*>(shaderData + shaderContainer->virtualSize + definition->physicalOffset);
             for (uint16_t i = 0; i < (definition->count + 3) / 4; i++)
             {
                 println("\tfloat4 c{} = asfloat(uint4(0x{:X}, 0x{:X}, 0x{:X}, 0x{:X}));",
-                    definition->registerIndex + i - (isPixelShader ? 256 : 0), value[0].get(), value[1].get(), value[2].get(), value[3].get());
+                    definition->registerIndex + i - (isPixelShader ? 256 : 0), value[0], value[1], value[2], value[3]);
 
                 value += 4;
             }
@@ -1406,7 +1406,7 @@ void ShaderRecompiler::recompile(const uint8_t* shaderData, const std::string_vi
                     };
                 };
 
-                value = definition->values[i].get();
+                value = definition->values[i];
 
                 println("\tint4 i{} = int4({}, {}, {}, {});",
                     (definition->registerIndex - 8992) / 4 + i, x, y, z, w);
@@ -1491,7 +1491,7 @@ void ShaderRecompiler::recompile(const uint8_t* shaderData, const std::string_vi
         out += "\tCubeMapData cubeMapData = (CubeMapData)0;\n";
     }
 
-    const be<uint32_t>* code = reinterpret_cast<const be<uint32_t>*>(shaderData + shaderContainer->virtualSize + shader->physicalOffset);
+    const uint32_t* code = reinterpret_cast<const uint32_t*>(shaderData + shaderContainer->virtualSize + shader->physicalOffset);
 
     union
     {

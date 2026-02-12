@@ -36,19 +36,19 @@ enum class ParameterType : uint16_t // D3DXPARAMETER_TYPE
 
 struct StructMemberInfo // D3DXSHADER_STRUCTMEMBERINFO
 {
-    be<uint32_t> name;
-    be<uint32_t> typeInfo;
+   uint32_t name;
+   uint32_t typeInfo;
 };
 
 struct TypeInfo // D3DXSHADER_TYPEINFO
 {
-    be<ParameterClass> parameterClass;
-    be<ParameterType> parameterType;
-    be<uint16_t> rows;
-    be<uint16_t> columns;
-    be<uint16_t> elements;
-    be<uint16_t> structMembers;
-    be<uint32_t> structMemberInfo;
+    ParameterClass parameterClass;
+    ParameterType parameterType;
+    uint16_t rows;
+    uint16_t columns;
+    uint16_t elements;
+    uint16_t structMembers;
+    uint32_t structMemberInfo;
 };
 
 enum class RegisterSet : uint16_t // D3DXREGISTER_SET
@@ -61,28 +61,28 @@ enum class RegisterSet : uint16_t // D3DXREGISTER_SET
 
 struct ConstantInfo // D3DXSHADER_CONSTANTINFO
 {
-    be<uint32_t> name;
-    be<RegisterSet> registerSet;
-    be<uint16_t> registerIndex;
-    be<uint16_t> registerCount;
-    be<uint16_t> reserved;
-    be<uint32_t> typeInfo;
-    be<uint32_t> defaultValue;
+    uint32_t name;
+    RegisterSet registerSet;
+    uint16_t registerIndex;
+    uint16_t registerCount;
+    uint16_t reserved;
+    uint32_t typeInfo;
+    uint32_t defaultValue;
 };
 
 struct ConstantTable // D3DXSHADER_CONSTANTTABLE
 {
-    be<uint32_t> size;
-    be<uint32_t> creator;
-    be<uint32_t> version;
-    be<uint32_t> constants;
-    be<uint32_t> constantInfo;
-    be<uint32_t> flags;
-    be<uint32_t> target;
+    uint32_t size;
+    uint32_t creator;
+    uint32_t version;
+    uint32_t constants;
+    uint32_t constantInfo;
+    uint32_t flags;
+    uint32_t target;
 };
 
 struct ConstantTableContainer
 {
-    be<uint32_t> size;
+    uint32_t size;
     ConstantTable constantTable;
 };

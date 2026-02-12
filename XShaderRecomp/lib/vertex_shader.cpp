@@ -567,6 +567,16 @@ void BuildShader(IntermediateVertexShader* pShader, std::stringstream& hlsl)
 		hlsl << "\n"; // Group operations by instruction
 	}
 }
+
+extern HRESULT CompileShader
+(
+	std::string hlsl_str,
+	const char* shader_profile,
+	IDxcBlob** ppHostShader,
+	const char* pSourceName,
+	bool compileSpirv = false
+);
+
 #include <fstream>
 // recompile xbox vertex shader function
  void CompileVertexShader

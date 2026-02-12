@@ -1,43 +1,45 @@
 #pragma once
 
-#include "constant_table.h"
 
 #include <atomic>
 #include <string> // std::string
-#include "dxc_compiler.h"
+
+#include "constant_table.h"
+
+
 
 struct Float4Definition
 {
-    be<uint16_t> registerIndex;
-    be<uint16_t> count;
-    be<uint32_t> physicalOffset;
+    uint16_t registerIndex;
+    uint16_t count;
+    uint32_t physicalOffset;
 };
 
 struct Int4Definition
 {
-    be<uint16_t> registerIndex;
-    be<uint16_t> count;
-    be<uint32_t> values[];
+   uint16_t registerIndex;
+   uint16_t count;
+   uint32_t values[];
 };
 
 struct DefinitionTable
 {
-    be<uint32_t> field0;
-    be<uint32_t> field4;
-    be<uint32_t> field8;
-    be<uint32_t> fieldC;
-    be<uint32_t> size;
-    be<uint32_t> definitions[]; // float4, int4 and bool separated by null terminators
+    uint32_t field0;
+    uint32_t field4;
+    uint32_t field8;
+    uint32_t fieldC;
+    uint32_t size;
+    uint32_t definitions[]; // float4, int4 and bool separated by null terminators
 };
 
 struct Shader
 {
-    be<uint32_t> physicalOffset;
-    be<uint32_t> size;
-    be<uint32_t> field8;
-    be<uint32_t> fieldC; // svPos register: (fieldC >> 8) & 0xFF
-    be<uint32_t> field10;
-    be<uint32_t> interpolatorInfo; // interpolator count: (interpolatorInfo >> 5) & 0x1F
+    uint32_t physicalOffset;
+    uint32_t size;
+    uint32_t field8;
+    uint32_t fieldC; // svPos register: (fieldC >> 8) & 0xFF
+    uint32_t field10;
+    uint32_t interpolatorInfo; // interpolator count: (interpolatorInfo >> 5) & 0x1F
 };
 
 enum class DeclUsage : uint32_t
@@ -75,10 +77,10 @@ struct Interpolator
 
 struct VertexShader : Shader
 {
-    be<uint32_t> field18;
-    be<uint32_t> vertexElementCount;
-    be<uint32_t> field20;
-    be<uint32_t> vertexElementsAndInterpolators[]; // field18 + vertex elements + interpolators
+   uint32_t field18;
+   uint32_t vertexElementCount;
+   uint32_t field20;
+   uint32_t vertexElementsAndInterpolators[]; // field18 + vertex elements + interpolators
 };
 
 enum PixelShaderOutputs : uint32_t
@@ -92,22 +94,22 @@ enum PixelShaderOutputs : uint32_t
 
 struct PixelShader : Shader
 {
-    be<uint32_t> field18;
-    be<PixelShaderOutputs> outputs;
-    be<uint32_t> interpolators[];
+    uint32_t field18;
+    PixelShaderOutputs outputs;
+    uint32_t interpolators[];
 };
 
 struct ShaderContainer
 {
-    be<uint32_t> flags;
-    be<uint32_t> virtualSize;
-    be<uint32_t> physicalSize;
-    be<uint32_t> fieldC;
-    be<uint32_t> constantTableOffset;
-    be<uint32_t> definitionTableOffset;
-    be<uint32_t> shaderOffset;
-    be<uint32_t> field1C;
-    be<uint32_t> field20;
+    uint32_t flags;
+    uint32_t virtualSize;
+    uint32_t physicalSize;
+    uint32_t fieldC;
+    uint32_t constantTableOffset;
+    uint32_t definitionTableOffset;
+    uint32_t shaderOffset;
+    uint32_t field1C;
+    uint32_t field20;
 };
 
 enum VertexShaderType
@@ -137,14 +139,6 @@ typedef enum _X_D3DRESOURCETYPE
 }
 X_D3DRESOURCETYPE;
 
-extern HRESULT CompileShader
-(
-    std::string hlsl_str,
-    const char* shader_profile,
-    IDxcBlob** ppHostShader,
-    const char* pSourceName,
-    bool compileSpirv = false
-);
 
 
 

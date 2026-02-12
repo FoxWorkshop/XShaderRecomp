@@ -1,3 +1,4 @@
+
 #include "shader.h"
 #include <filesystem>
 #include <fstream>
@@ -5,6 +6,7 @@
 #include <thread>
 #include <sstream>
 #include "generated_shader_templates.h"
+
 
 ShaderSources g_ShaderSources;
 

@@ -1,6 +1,8 @@
+
 #include "shader.h"
-#include "shader_recompiler.h"
-#include "dxc_compiler.h"
+
+#include <memory>
+
 
 static std::unique_ptr<uint8_t[]> readAllBytes(const char* filePath, size_t& fileSize)
 {
@@ -21,13 +23,13 @@ static void writeAllBytes(const char* filePath, const void* data, size_t dataSiz
     fclose(file);
 }
 
-struct RecompiledShader
+/**struct RecompiledShader
 {
     uint8_t* data = nullptr;
     IDxcBlob* dxil = nullptr;
     std::vector<uint8_t> spirv;
     uint32_t specConstantsMask = 0;
-};
+};*/
 
 int main(int argc, char** argv)
 {
@@ -63,7 +65,7 @@ int main(int argc, char** argv)
 #endif
         ;
 
-    size_t includeSize = 0;
+   /** size_t includeSize = 0;
     auto includeData = readAllBytes(includeInput, includeSize);
     std::string_view include(reinterpret_cast<const char*>(includeData.get()), includeSize);
 
@@ -213,7 +215,7 @@ int main(int argc, char** argv)
         size_t fileSize;
         recompiler.recompile(readAllBytes(input, fileSize).get(), include);
         writeAllBytes(output, recompiler.out.data(), recompiler.out.size());
-    }
+    }*/
 
     return 0;
 }

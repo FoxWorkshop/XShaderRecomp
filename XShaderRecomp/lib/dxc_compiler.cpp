@@ -1,5 +1,6 @@
 #include "dxc_compiler.h"
 
+
 DxcCompiler::DxcCompiler()
 {
     HRESULT hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
