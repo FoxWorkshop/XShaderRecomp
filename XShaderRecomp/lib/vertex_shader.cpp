@@ -648,18 +648,13 @@ Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(IntermediateVertexShade
 
 
 	Microsoft::WRL::ComPtr<IDxcBlob> pCompiledShader;
-	IDxcBlob* rawPtr = nullptr;
 
 	CompileVertexShader(
 		&intermediateShader,
-		&pCompiledShader,
-		0, //for now default to 0 we will add detection later through vertex declaration and instruction analysis
+		pCompiledShader.GetAddressOf(),
+		0,
 		exportHLSL
 	);
-
-
-	pCompiledShader.Attach(rawPtr); // Attach the raw pointer to the ComPtr, taking ownership of it
-
 
 	return pCompiledShader;
 }
