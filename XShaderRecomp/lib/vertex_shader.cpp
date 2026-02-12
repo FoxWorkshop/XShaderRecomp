@@ -601,7 +601,7 @@ void CompileVertexShader
 	// Combine the shader template with the shader program
 	auto hlsl_stream = std::stringstream();
 
-	std::string common = g_ShaderSources.vertexShaderCommon;
+	std::string common = g_ShaderSources.vertexShaderCommon + "\n\n";
 	std::string hlslHeader = g_ShaderSources.vertexShaderTemplateHlsl[type][0]; 
 	std::string hlslFooter = g_ShaderSources.vertexShaderTemplateHlsl[type][1];
 
@@ -633,9 +633,10 @@ void CompileVertexShader
 
 	}
 
-	hlsl_stream.str().insert(0, common);
+
 
 	std::string hlsl_final = hlsl_stream.str();
+	hlsl_final.insert(0, common); // Prepend the common HLSL code to the final shader code
 	std::string s = template_vs[type] + ".hlsl";
 	const char* notionalSourceName = s.c_str();
 	CompileShader(hlsl_final, vs_model_, ppHostShader, notionalSourceName);
