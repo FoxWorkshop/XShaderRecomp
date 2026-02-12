@@ -38,6 +38,16 @@ std::ifstream OpenWithRetry(const std::string& path)
 	return fstream;
 }
 
+int ShaderSources::Update() {
+	int versionOnDisk = shaderVersionOnDisk;
+	if (shaderVersionLoadedFromDisk != versionOnDisk) {
+		LoadShadersFromDisk();
+		shaderVersionLoadedFromDisk = versionOnDisk;
+	}
+
+	return shaderVersionLoadedFromDisk;
+}
+
 void ShaderSources::LoadShadersFromDisk() 
 {
 

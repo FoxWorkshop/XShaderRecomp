@@ -1,0 +1,2 @@
+
+std::filesystem::path GetUserDataDirectory();

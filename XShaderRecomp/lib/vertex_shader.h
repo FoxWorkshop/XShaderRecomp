@@ -186,5 +186,22 @@ extern void ParseVshFunction
 	IntermediateVertexShader* pShader
 );
 
-
+struct X_D3DVertexShader
+{
+#if 0 
+	DWORD Signature; // Note : Debug XBE's have a 'Vshd' DWORD signature prefix
 #endif
+	DWORD RefCount; // Based on the observation this member is set to 1 in D3DDevice_CreateVertexShader and decreased in D3DDevice_DeleteVertexShader
+	DWORD Flags; // Contains X_VERTEXSHADER_FLAG_* bits
+	DWORD ProgramSize;
+	DWORD ProgramAndConstantsDwords; // Sum of ProgramSize + constant count, expressed in instruction slots, taking 4 DWORD's per slot (see X_VSH_INSTRUCTION_SIZE)
+	BYTE Dimensionality[4]; // Guesswork, since all 4 bytes (for all 4 textures) are most often set to 0 (or 2 when a texture isn't used) and 1, 3 and 4 also occur (and nothing else)
+	struct X_VERTEXATTRIBUTEFORMAT VertexAttribute;
+	DWORD ProgramAndConstants[X_VSH_MAX_INSTRUCTION_COUNT]; // The binary function data and constants (contents continues futher outside this struct, up to ProgramAndConstantsDwords * 4 (=X_VSH_INSTRUCTION_SIZE) DWORD's)
+};
+
+inline X_D3DVertexShader* VshHandleToXboxVertexShader(size_t Handle) { return (X_D3DVertexShader*)(Handle & ~X_D3DFVF_RESERVED0); }
+#endif
+
+
+const uint8_t* CreateRecompiledShader(uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool exportHLSL);

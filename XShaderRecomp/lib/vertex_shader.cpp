@@ -8,11 +8,17 @@
 #include <array>
 #include <bitset>
 #include <filesystem>
+#include "vertex_declaration.h"
 #include "vertex_shader.h"
 #include "shader.h"
 #include <map>
 
+#include <conio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
+#include <stdio.h>
+#include <stdlib.h>
 
 static const char* vs_model_ = "vs_6_0";
 
@@ -578,6 +584,8 @@ extern HRESULT CompileShader
 );
 
 #include <fstream>
+#include "os.h"
+#include <direct.h>
 // recompile xbox vertex shader function
 void CompileVertexShader
 (
@@ -599,12 +607,18 @@ void CompileVertexShader
 	{
 		static int count;
 		//printf("Create Vertex Shader ID %d\n", count);
-		std::string debugName = "VertexShader" + std::to_string(count++) + (std::string)".hlsl";
-		std::ofstream  outFile2(debugName, std::ios::app);
-		//outFile2 << std::hex << shaderHash << '\n' << '\n';
+		std::string shaderFolder = GetUserDataDirectory().string() + "/Shaders";
+		int nError = 0;
 
-		outFile2 << hlsl_str << '\n';
-		outFile2.close();
+		std::filesystem::create_directories(shaderFolder);
+	
+		if (std::filesystem::exists(shaderFolder))
+		{
+			std::string shaderName = shaderFolder + "/VertexShader_" + std::to_string(count++) + ".hlsl";
+			std::ofstream  outFile2(shaderName, std::ios::app);
+			outFile2 << hlsl_str << '\n';
+			outFile2.close();
+		}
 
 	}
 
@@ -687,47 +701,55 @@ extern void ParseVshFunction
 
 const uint8_t* CreateRecompiledShader(uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool exportHLSL)
 {
-	IntermediateVertexShader intermediateShader;
+	static int vertexShaderVersion = -1;
 
-	*pXboxFunctionSize = GetVshFunctionSize(pXboxFunction);
+	int shaderVersion = g_ShaderSources.Update();
 
-	// Parse into intermediate format
-	ParseVshFunction((DWORD*)pXboxFunction, &intermediateShader);
-
-	// We're going to create a new shader
-	auto newShader = LazyVertexShader();
-	newShader.referenceCount = 1;
-
-	if (intermediateShader.Instructions.empty() == false)
+	if (vertexShaderVersion != shaderVersion)
 	{
-		// Use std::async with the fixed function
-		auto compileResult = std::async(
-			std::launch::async,
-			AsyncCreateVertexShader,
-			std::move(intermediateShader),  // Move to avoid copy issues
-			exportHLSL
-		);
+		vertexShaderVersion = shaderVersion;
+		IntermediateVertexShader intermediateShader;
 
-		newShader.compiledBlob = compileResult.get();
+		*pXboxFunctionSize = GetVshFunctionSize(pXboxFunction);
 
-		// Copy to bytecode buffer
-		newShader.bytecode.resize(newShader.compiledBlob->GetBufferSize());
-		memcpy(
-			newShader.bytecode.data(),
-			newShader.compiledBlob->GetBufferPointer(),
-			newShader.compiledBlob->GetBufferSize()
-		);
-		newShader.isReady = true;
+		// Parse into intermediate format
+		ParseVshFunction((DWORD*)pXboxFunction, &intermediateShader);
 
-		// Store in library-owned cache
-		auto* cachedShader = ShaderCache::Instance().AddShader(std::move(newShader));
+		// We're going to create a new shader
+		auto newShader = LazyVertexShader();
+		newShader.referenceCount = 1;
 
-		*outSize = cachedShader->bytecode.size();
-		return cachedShader->bytecode.data();  // Return pointer to library-owned memory
-	}
-	else
-	{
-		printf("[XShaderRecomp] WARNING: Empty vertex shader function\n");
+		if (intermediateShader.Instructions.empty() == false)
+		{
+			// Use std::async with the fixed function
+			auto compileResult = std::async(
+				std::launch::async,
+				AsyncCreateVertexShader,
+				std::move(intermediateShader),  // Move to avoid copy issues
+				exportHLSL
+			);
+
+			newShader.compiledBlob = compileResult.get();
+
+			// Copy to bytecode buffer
+			newShader.bytecode.resize(newShader.compiledBlob->GetBufferSize());
+			memcpy(
+				newShader.bytecode.data(),
+				newShader.compiledBlob->GetBufferPointer(),
+				newShader.compiledBlob->GetBufferSize()
+			);
+			newShader.isReady = true;
+
+			// Store in library-owned cache
+			auto* cachedShader = ShaderCache::Instance().AddShader(std::move(newShader));
+
+			*outSize = cachedShader->bytecode.size();
+			return cachedShader->bytecode.data();  // Return pointer to library-owned memory
+		}
+		else
+		{
+			printf("[XShaderRecomp] WARNING: Empty vertex shader function\n");
+		}
 	}
 
 	return nullptr;
