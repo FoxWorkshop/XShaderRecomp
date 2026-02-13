@@ -100,13 +100,13 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Ap
     endif()
 endif()
 
-#if (WIN32)
- #   target_compile_definitions(XShaderRecomp PRIVATE _CRT_SECURE_NO_WARNINGS)
-  #  add_custom_command(TARGET XShaderRecomp POST_BUILD
-   #     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:XShaderRecomp> $<TARGET_FILE_DIR:XShaderRecomp>
-    #    COMMAND_EXPAND_LISTS
-    #)
-#endif()
+if (WIN32)
+    target_compile_definitions(XShaderRecompTool PRIVATE _CRT_SECURE_NO_WARNINGS)
+    add_custom_command(TARGET XShaderRecompTool POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:XShaderRecompTool> $<TARGET_FILE_DIR:XShaderRecompTool>
+        COMMAND_EXPAND_LISTS
+    )
+endif()
 
 if (XSHADER_RECOMP_DXIL)
     target_compile_definitions(XShaderRecompLib PRIVATE XSHADER_RECOMP_DXIL)
