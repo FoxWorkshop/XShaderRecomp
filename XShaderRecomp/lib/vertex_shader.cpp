@@ -20,6 +20,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <fstream> //for hlsl export
+#include "os.h"
+
 std::string commonVertexShaderHlsl;
 
 static const char* vs_model_ = "vs_6_0";
@@ -585,9 +588,9 @@ extern HRESULT CompileShader
 	bool compileSpirv = false
 );
 
-#include <fstream>
-#include "os.h"
-#include <direct.h>
+
+
+static int count = 0;
 // recompile xbox vertex shader function
 void CompileVertexShader
 (
@@ -602,7 +605,7 @@ void CompileVertexShader
 	auto hlsl_stream = std::stringstream();
 
 	std::string common = g_ShaderSources.vertexShaderCommon + "\n\n";
-	std::string hlslHeader = g_ShaderSources.vertexShaderTemplateHlsl[type][0]; 
+	std::string hlslHeader = g_ShaderSources.vertexShaderTemplateHlsl[type][0];
 	std::string hlslFooter = g_ShaderSources.vertexShaderTemplateHlsl[type][1];
 
 	//hlsl_stream << g_ShaderSources.vertexShaderCommon << '\n' << '\n';
@@ -611,18 +614,16 @@ void CompileVertexShader
 	hlsl_stream << g_ShaderSources.vertexShaderTemplateHlsl[type][1]; // Finish with the HLSL template footer
 
 
-
 	if (exportHLSL)
 	{
-
 		std::string hlsl_streamExport = "#include \"common_vs.hlsli\"\n\n";
 		hlsl_streamExport += hlsl_stream.str();
-		static int count;
+
 		//printf("Create Vertex Shader ID %d\n", count);
 		std::string shaderFolder = GetUserDataDirectory().string() + "/XShaderRecomp/out/";
 
 		std::filesystem::create_directories(shaderFolder);
-	
+
 		if (std::filesystem::exists(shaderFolder))
 		{
 			std::string shaderName = shaderFolder + "/VertexShader_" + std::to_string(count++) + ".hlsl";
@@ -630,9 +631,7 @@ void CompileVertexShader
 			outFile2 << hlsl_streamExport << '\n';
 			outFile2.close();
 		}
-
 	}
-
 
 
 	std::string hlsl_final = hlsl_stream.str();
@@ -640,11 +639,10 @@ void CompileVertexShader
 	std::string s = template_vs[type] + ".hlsl";
 	const char* notionalSourceName = s.c_str();
 	CompileShader(hlsl_final, vs_model_, ppHostShader, notionalSourceName);
-
 }
 
 
-Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(IntermediateVertexShader intermediateShader, bool exportHLSL) {
+Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(const VertexShaderType type, IntermediateVertexShader intermediateShader, bool exportHLSL) {
 
 
 	Microsoft::WRL::ComPtr<IDxcBlob> pCompiledShader;
@@ -652,7 +650,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(IntermediateVertexShade
 	CompileVertexShader(
 		&intermediateShader,
 		pCompiledShader.GetAddressOf(),
-		0,
+		type,
 		exportHLSL
 	);
 
@@ -709,58 +707,96 @@ extern void ParseVshFunction
 	}
 }
 
-const uint8_t* CreateRecompiledShader(uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool exportHLSL)
+const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool exportHLSL)
 {
-	static int vertexShaderVersion = -1;
 
-	int shaderVersion = g_ShaderSources.Update();
+	int32_t type = 0;
 
-	if (vertexShaderVersion != shaderVersion)
+	auto vertexDecl = HostGetVertexDeclaration(handle, false);
+
+#ifdef SHADOW_RECOMP
+	if (vertexDecl)
 	{
-		vertexShaderVersion = shaderVersion;
-		IntermediateVertexShader intermediateShader;
-
-		*pXboxFunctionSize = GetVshFunctionSize(pXboxFunction);
-
-		// Parse into intermediate format
-		ParseVshFunction((DWORD*)pXboxFunction, &intermediateShader);
-
-		// We're going to create a new shader
-		auto newShader = LazyVertexShader();
-		newShader.referenceCount = 1;
-
-		if (intermediateShader.Instructions.empty() == false)
+		auto vertexElement_ = vertexDecl->pHostVertexElements;
+		printf("Guest Vertex elements logs\n");
+		int index = 0;
+		while (vertexElement_->Stream != 0xFF && vertexElement_->Type != D3DDECLTYPE_UNUSED)
 		{
-			// Use std::async with the fixed function
-			auto compileResult = std::async(
-				std::launch::async,
-				AsyncCreateVertexShader,
-				std::move(intermediateShader),  // Move to avoid copy issues
-				exportHLSL
-			);
+			if (vertexElement_->Stream == 1)
+			{
+				switch (vertexElement_->Type)
+				{
+				case D3DDECLTYPE_SHORT2:
+				case D3DDECLTYPE_SHORT2N:
+				case D3DDECLTYPE_USHORT2N:
+					type = Bones_int2;
+					break;
 
-			newShader.compiledBlob = compileResult.get();
+				case D3DDECLTYPE_SHORT4:
+				case D3DDECLTYPE_SHORT4N:
+				case D3DDECLTYPE_USHORT4N:
+					type = Bones_int4;
+					break;
+				}
+				++vertexElement_;
+			}
 
-			// Copy to bytecode buffer
-			newShader.bytecode.resize(newShader.compiledBlob->GetBufferSize());
-			memcpy(
-				newShader.bytecode.data(),
-				newShader.compiledBlob->GetBufferPointer(),
-				newShader.compiledBlob->GetBufferSize()
-			);
-			newShader.isReady = true;
-
-			// Store in library-owned cache
-			auto* cachedShader = ShaderCache::Instance().AddShader(std::move(newShader));
-
-			*outSize = cachedShader->bytecode.size();
-			return cachedShader->bytecode.data();  // Return pointer to library-owned memory
-		}
-		else
-		{
-			printf("[XShaderRecomp] WARNING: Empty vertex shader function\n");
+			if (type)
+				break;
 		}
 	}
+#endif
+
+
+	static int vertexShaderVersion = -1;
+
+	g_ShaderSources.Update();
+
+
+
+	IntermediateVertexShader intermediateShader;
+
+	*pXboxFunctionSize = GetVshFunctionSize(pXboxFunction);
+
+	// Parse into intermediate format
+	ParseVshFunction((DWORD*)pXboxFunction, &intermediateShader);
+
+	// We're going to create a new shader
+	auto newShader = LazyVertexShader();
+	newShader.referenceCount = 1;
+
+	if (intermediateShader.Instructions.empty() == false)
+	{
+		// Use std::async with the fixed function
+		auto compileResult = std::async(
+			std::launch::async,
+			AsyncCreateVertexShader, (VertexShaderType)type,
+			std::move(intermediateShader),  // Move to avoid copy issues
+			exportHLSL
+		);
+
+		newShader.compiledBlob = compileResult.get();
+
+		// Copy to bytecode buffer
+		newShader.bytecode.resize(newShader.compiledBlob->GetBufferSize());
+		memcpy(
+			newShader.bytecode.data(),
+			newShader.compiledBlob->GetBufferPointer(),
+			newShader.compiledBlob->GetBufferSize()
+		);
+		newShader.isReady = true;
+
+		// Store in library-owned cache
+		auto* cachedShader = ShaderCache::Instance().AddShader(std::move(newShader));
+
+		*outSize = cachedShader->bytecode.size();
+		return cachedShader->bytecode.data();  // Return pointer to library-owned memory
+	}
+	else
+	{
+		printf("[XShaderRecomp] WARNING: Empty vertex shader function\n");
+	}
+
 
 	return nullptr;
 }

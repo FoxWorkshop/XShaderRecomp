@@ -13,8 +13,8 @@ ShaderSources g_ShaderSources;
 std::string template_vs[VertexShaderTypeMax] =
 {
 	XShaderRecomp::Templates::VertexShaderTemplate,
-	XShaderRecomp::Templates::weights_bones_vs, 
-	XShaderRecomp::Templates::weight_bones_normal_uv_vs,
+	XShaderRecomp::Templates::bones_int2, 
+	XShaderRecomp::Templates::bones_int4,
 	XShaderRecomp::Templates::_2D_vs,
 };
 

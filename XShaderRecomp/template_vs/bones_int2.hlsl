@@ -7,6 +7,7 @@ struct VS_INPUT
     float4 v[13] : TEXCOORD3;
 };
 
+
 struct VS_OUTPUT // Declared identical to pixel shader input (see PS_INPUT)
 {
     float4 oPos : SV_Position; // Homogeneous clip space position
@@ -23,17 +24,15 @@ struct VS_OUTPUT // Declared identical to pixel shader input (see PS_INPUT)
 };
 
 
-VS_OUTPUT main(VS_INPUT xIn)
+VS_OUTPUT main(const VS_INPUT xIn)
 {
-
-    
 	// Output variables
-   float4 oPos, oD0, oD1, oB0, oB1, oT0, oT1, oT2, oT3;
+    float4 oPos, oD0, oD1, oB0, oB1, oT0, oT1, oT2, oT3;
     oPos = oD0 = oD1 = oB0 = oB1 = oT0 = oT1 = oT2 = oT3 = float4(0, 0, 0, 1); // Pre-initialize w component of outputs to 1
 
 	// Single component outputs
     float4 oFog, oPts; // x is write-only on Xbox. Use float4 as some games use incorrect masks
-    oFog = 1; // Default to no fog. 
+    oFog = 1; // Default to no fog.
     oPts = 0;
 
 	// Address (index) register
@@ -83,7 +82,7 @@ VS_OUTPUT main(VS_INPUT xIn)
 
 	// Copy variables to output struct
     VS_OUTPUT xOut;
-
+    
     xOut.oPos = reverseScreenspaceTransform(oPos);
     xOut.oD0 = saturate(oD0);
     xOut.oD1 = saturate(oD1);
@@ -96,6 +95,6 @@ VS_OUTPUT main(VS_INPUT xIn)
     xOut.oT1 = oT1 / xboxTextureScale[1];
     xOut.oT2 = oT2 / xboxTextureScale[2];
     xOut.oT3 = oT3 / xboxTextureScale[3];
-    
+
     return xOut;
 }

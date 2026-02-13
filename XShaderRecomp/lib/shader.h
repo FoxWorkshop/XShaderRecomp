@@ -115,8 +115,8 @@ struct ShaderContainer
 enum VertexShaderType
 {
     Default,
-    Weights_Bones,
-    Weights_Bones_normal_uv,
+    Bones_int2,
+    Bones_int4,
     TwoDimensional, //hud, menu, etc.
     VertexShaderTypeMax
 };

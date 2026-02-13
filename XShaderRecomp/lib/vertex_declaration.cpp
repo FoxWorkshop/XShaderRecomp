@@ -328,7 +328,7 @@ public:
 					< std::tie(regY.StreamIndex, regY.Offset);
 			});
 
-		printf("Parsing vertex declaration\n");
+		printf("[XSHR] Parsing vertex declaration\n");
 		for (size_t i = 0; i < orderedRegisterIndices.size(); i++) {
 			auto regIndex = orderedRegisterIndices[i];
 			auto& slot = pXboxDeclaration->Slots[regIndex];
@@ -378,7 +378,6 @@ public:
 			pVertexDeclaration->vRegisterInDeclaration[i] = RegVIsPresentInDeclaration[i];
 		}
 
-		D3DVERTEXELEMENT9* copyVertex = HostVertexElements;
 
 		return HostVertexElements;
 	}

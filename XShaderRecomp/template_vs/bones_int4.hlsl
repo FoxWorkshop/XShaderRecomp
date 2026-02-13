@@ -1,13 +1,10 @@
 
 struct VS_INPUT
 {
-    float4 iPos : TEXCOORD0; // position
-    float4 weights : TEXCOORD1; // weights
-    int2 boneIndice : TEXCOORD2; // bone indices 
-    float4 normal : TEXCOORD3; // normal
-    float4 v4 : TEXCOORD4;
-    float4 uvs : TEXCOORD5; // UVs
-    float4 v[10] : TEXCOORD6;
+    float4 iPos : TEXCOORD;
+    float4 weights : TEXCOORD1;
+    int4 bones : TEXCOORD2;
+    float4 v[13] : TEXCOORD3;
 };
 
 
@@ -27,19 +24,18 @@ struct VS_OUTPUT // Declared identical to pixel shader input (see PS_INPUT)
 };
 
 
-VS_OUTPUT main(VS_INPUT xIn)
-{  
+VS_OUTPUT main(const VS_INPUT xIn)
+{
 	// Output variables
     float4 oPos, oD0, oD1, oB0, oB1, oT0, oT1, oT2, oT3;
     oPos = oD0 = oD1 = oB0 = oB1 = oT0 = oT1 = oT2 = oT3 = float4(0, 0, 0, 1); // Pre-initialize w component of outputs to 1
 
 	// Single component outputs
     float4 oFog, oPts; // x is write-only on Xbox. Use float4 as some games use incorrect masks
-    oFog = 1; // Default to no fog. 
+    oFog = 1; // Default to no fog.
     oPts = 0;
 
 	// Address (index) register
-    
     int1 a0 = 0;
 
 	// Temporary registers
@@ -53,32 +49,29 @@ VS_OUTPUT main(VS_INPUT xIn)
 	// Unpack 16 flags from 4 float4 constant registers
     float vRegisterDefaultFlags[16] = (float[16]) vRegisterDefaultFlagsPacked;
 
-//#define init_v(i) v##i = lerp(xIn.v[i], vRegisterDefaultValues[i], vRegisterDefaultFlags[i]);
-    
-    #define init_v(j, i) v##j = lerp(xIn.v[i], vRegisterDefaultValues[j], vRegisterDefaultFlags[j]);
-	// Note : unroll manually instead of for-loop, because of the ## concatenation
-    
+	// Initialize input registers from the vertex buffer data
+	// Or use the register's default value (which can be changed by the title)
+#define init_v(j, i) v##j = lerp(xIn.v[i], vRegisterDefaultValues[j], vRegisterDefaultFlags[j]);
 
+	// Note : unroll manually instead of for-loop, because of the ## concatenation
+    init_v(3, 0);
+	init_v(4, 1);
+    init_v(5, 2);
+    init_v(6, 3);
+    init_v(7, 4);
+	init_v(8, 5);
+    init_v(9, 6);
+    init_v(10, 7);
+    init_v(11, 8);
+	init_v(12, 9);
+	init_v(13, 10);
+	init_v(14, 11);
+	init_v(15, 12);
     
-    init_v(6, 0);
-    init_v(7, 1);
-	init_v(8, 2);
-    init_v(9, 3);
-    init_v(10, 4);
-    init_v(11, 5);
-	init_v(12, 6);
-	init_v(13, 7);
-	init_v(14, 8);
-	init_v(15, 9);
     
     v0 = lerp(xIn.iPos, vRegisterDefaultValues[0], vRegisterDefaultFlags[0]);
     v1 = lerp(xIn.weights, vRegisterDefaultValues[1], vRegisterDefaultFlags[1]);
-
-    v2 = float4((float) xIn.boneIndice.x, (float) xIn.boneIndice.y, 0.0f, 0.0f);
-  
-    v3 = lerp(xIn.normal, vRegisterDefaultValues[3], vRegisterDefaultFlags[3]);
-    v4 = lerp(xIn.v4, vRegisterDefaultValues[4], vRegisterDefaultFlags[4]);
-    v5 = lerp(xIn.uvs, vRegisterDefaultValues[5], vRegisterDefaultFlags[5]);
+    v2 = _tof4(xIn.bones);
 
 	// Temp variable for paired VS instruction
     float4 temp;
@@ -90,8 +83,6 @@ VS_OUTPUT main(VS_INPUT xIn)
 	// Copy variables to output struct
     VS_OUTPUT xOut;
     
-
-
     xOut.oPos = reverseScreenspaceTransform(oPos);
     xOut.oD0 = saturate(oD0);
     xOut.oD1 = saturate(oD1);
@@ -104,6 +95,6 @@ VS_OUTPUT main(VS_INPUT xIn)
     xOut.oT1 = oT1 / xboxTextureScale[1];
     xOut.oT2 = oT2 / xboxTextureScale[2];
     xOut.oT3 = oT3 / xboxTextureScale[3];
-    
+
     return xOut;
 }
