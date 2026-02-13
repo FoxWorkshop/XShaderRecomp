@@ -718,7 +718,7 @@ const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DW
 	if (vertexDecl)
 	{
 		auto vertexElement_ = vertexDecl->pHostVertexElements;
-		printf("Guest Vertex elements logs\n");
+
 		int index = 0;
 		while (vertexElement_->Stream != 0xFF && vertexElement_->Type != D3DDECLTYPE_UNUSED)
 		{
@@ -729,17 +729,20 @@ const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DW
 				case D3DDECLTYPE_SHORT2:
 				case D3DDECLTYPE_SHORT2N:
 				case D3DDECLTYPE_USHORT2N:
+					printf("[XSHR] Shader Int2 detected.\n");
 					type = Bones_int2;
 					break;
 
 				case D3DDECLTYPE_SHORT4:
 				case D3DDECLTYPE_SHORT4N:
 				case D3DDECLTYPE_USHORT4N:
+					printf("[XSHR] Shader Int4 detected.\n");
 					type = Bones_int4;
 					break;
 				}
-				++vertexElement_;
 			}
+
+			++vertexElement_;
 
 			if (type)
 				break;
