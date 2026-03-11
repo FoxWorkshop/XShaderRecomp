@@ -1,7 +1,7 @@
 # XShaderRecomp
 
 
-XShaderRecomp is a helper library that extract, decode and convert Xbox shader binaries to modern HLSL. 
+XShaderRecomp is a helper library that extract, decode and convert OG Xbox shader binaries to modern HLSL. 
 The resulting files can be recompiled to DXIL and SPIR-V using the DirectX Shader Compiler (DXC) for use in Direct3D 12 and Vulkan either automatically or manually through `XShaderRecompTool`.
 The program is heavy based on CXBX's shader implementation.
 
@@ -38,13 +38,7 @@ Both vertex and pixel shader stages use three constant buffers:
 
 Vertex and pixel shader constants are copied directly from the guest render device, and shaders expect them in little-endian format.
 
-Constant buffer registers are populated using reflection data embedded in the shader binaries. If this data is missing, the recompiler will not function. However, support can be added by defining a `float4` array that covers the entire register range.
-
-Integer constants are unimplemented. If the target game requires them, you will need to make new constant buffer slots or append them to the existing ones.
-
 All constant buffers are implemented as root constant buffers in D3D12, making them easy to upload to the GPU using a linear allocator. In Vulkan, the GPU virtual addresses of constant buffers are passed as push constants. Constants are accessed via preprocessor macros that load values from the GPU virtual addresses using `vk::RawBufferLoad`. These macros ensure the shader function body remains the same for both DXIL and SPIR-V.
-
-Out-of-bounds dynamic constant accesses should return 0. However, since root constant buffers in D3D12 and raw buffer loads in Vulkan do not enforce this behavior, the shader developer must handle it. To solve this, each dynamic index access is clamped to the valid range, and out-of-bounds registers are forced to become 0.
 
 ### Vertex Declaration
 
