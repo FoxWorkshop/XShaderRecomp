@@ -69,8 +69,8 @@ VS_OUTPUT main(const VS_INPUT xIn)
 	init_v(15, 12);
     
     
-    v0 = lerp(xIn.iPos, vRegisterDefaultValues[0], vRegisterDefaultFlags[0]);
-    v1 = lerp(xIn.weights, vRegisterDefaultValues[1], vRegisterDefaultFlags[1]);
+    v0 = lerp(xIn.iPos, vRegisterDefaultValues(0), vRegisterDefaultFlags[0]);
+    v1 = lerp(xIn.weights, vRegisterDefaultValues(1), vRegisterDefaultFlags[1]);
     v2 = _tof4(xIn.bones);
 
 	// Temp variable for paired VS instruction
