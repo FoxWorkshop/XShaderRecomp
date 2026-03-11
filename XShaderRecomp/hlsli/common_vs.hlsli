@@ -2,23 +2,92 @@
 #define X_D3DSCM_CORRECTION                 96 // Add 96 to arrive at the range 0..191 (instead of -96..95)
 #define X_D3DVS_CONSTREG_COUNT              192
 
+#ifdef __spirv__
+
+struct PushConstants
+{
+    uint64_t VertexShaderConstants;
+    uint64_t PixelShaderConstants;
+    uint64_t SharedConstants;
+};
+
+[[vk::push_constant]] ConstantBuffer<PushConstants> g_PushConstants;
+
+// compute offset of cN.component
+#define V_CBUFFER_OFFSET(cN, comp) ((cN)*16 + ((comp) == 'x' ? 0 : (comp) == 'y' ? 4 : (comp) == 'z' ? 8 : 12))
+#define V_ARRAY_OFFSET(cn, slot) ((cn)*16 + (slot)*16)
+
+#define vs_consts(i) vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + (i)*16)
+#define vRegisterDefaultValues(i) vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_ARRAY_OFFSET(192, i) )
+#define vRegisterDefaultFlagsPacked(i) vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants +  V_ARRAY_OFFSET(208, i) )
+
+#define xboxScreenspaceScale  vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_CBUFFER_OFFSET(212, 'x') )
+#define xboxScreenspaceOffset  vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_CBUFFER_OFFSET(213, 'x') )
+#define xboxTextureScale(i) vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants +  V_ARRAY_OFFSET(214, i) )
+
+
+
+#define FogTableMode vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(81, 'z') )
+#define FogDensity vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(81, 'w') )
+#define FogStart vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(82, 'x') )
+#define FogEnd vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(82, 'y') )
+
+
+#else
+
 cbuffer VertexShaderConstants : register(b0, space4)
 {
-    float4 vs_consts[X_D3DVS_CONSTREG_COUNT] : packoffset(c0); // Xbox constant registers (// c0 -> c191) 
-    float4 vRegisterDefaultValues[16] : packoffset(c192); //vertex attribute (it seems to work if those are empty see SetFixedFunctionDefaultVertexAttributes)
-    float4 vRegisterDefaultFlagsPacked[4] : packoffset(c208); // Default values for vertex registers, and whether to use them (see UpdateHostVertexDeclaration function)
+    float4 vs_constants[X_D3DVS_CONSTREG_COUNT] : packoffset(c0); // Xbox constant registers (// c0 -> c191) 
+    float4 vRegisterDefaultVal[16] : packoffset(c192); //vertex attribute (it seems to work if those are empty see SetFixedFunctionDefaultVertexAttributes)
+    float4 vRegisterDefaultFlagsPack[4] : packoffset(c208); // Default values for vertex registers, and whether to use them (see UpdateHostVertexDeclaration function)
     float4 xboxScreenspaceScale : packoffset(c212);
     float4 xboxScreenspaceOffset : packoffset(c213);
-    float4 xboxTextureScale[4] : packoffset(c214);
+    float4 xboxTextureScl[4] : packoffset(c214);
    // float4 FogInfo : packoffset(c218); //Parameters for mapping the shader's fog output value to a fog factor (D3DVS_CONSTREG_FOGINFO)  
 }
 
 cbuffer SharedConstants : register(b2, space4)
 {
     uint FogTableMode : packoffset(c81.z);
-    uint FogDensity : packoffset(c81.w);   
+    uint FogDensity : packoffset(c81.w);
     uint FogStart : packoffset(c82.x);
     uint FogEnd : packoffset(c82.y);
+}
+
+#define vs_consts(i) vs_constants[i]
+#define vRegisterDefaultValues(i) vRegisterDefaultVal[i]
+#define vRegisterDefaultFlagsPacked(i) vRegisterDefaultFlagsPack[i]
+#define xboxTextureScale(i) xboxTextureScl[i]
+
+
+#endif
+
+void UnpackRegisterDefaultFlags(out float flags[16])
+{
+    float4 packed0 = vRegisterDefaultFlagsPacked(0);
+    float4 packed1 = vRegisterDefaultFlagsPacked(1);
+    float4 packed2 = vRegisterDefaultFlagsPacked(2);
+    float4 packed3 = vRegisterDefaultFlagsPacked(3);
+
+    flags[0] = packed0.x;
+    flags[1] = packed0.y;
+    flags[2] = packed0.z;
+    flags[3] = packed0.w;
+
+    flags[4] = packed1.x;
+    flags[5] = packed1.y;
+    flags[6] = packed1.z;
+    flags[7] = packed1.w;
+
+    flags[8] = packed2.x;
+    flags[9] = packed2.y;
+    flags[10] = packed2.z;
+    flags[11] = packed2.w;
+
+    flags[12] = packed3.x;
+    flags[13] = packed3.y;
+    flags[14] = packed3.z;
+    flags[15] = packed3.w;
 }
 
 float4 _tof4(float src)
@@ -58,8 +127,9 @@ float4 c(int register_number)
     // Note: returning 0 directly requires many more instructions
     if (register_number >= X_D3DVS_CONSTREG_COUNT) // X_D3DVS_CONSTREG_COUNT
         register_number = -1;
+    
 
-    return vs_consts[register_number];
+    return vs_consts(register_number);
 }
 
 // Due to rounding differences with the Xbox (and increased precision on PC?)

@@ -597,7 +597,8 @@ void CompileVertexShader
 	IntermediateVertexShader* pIntermediateShader,
 	IDxcBlob** ppHostShader,
 	const int32_t type,
-	bool exportHLSL)
+	bool exportHLSL,
+	bool vulkan)
 {
 	assert(pIntermediateShader->Instructions.size() > 0);
 
@@ -638,11 +639,11 @@ void CompileVertexShader
 	hlsl_final.insert(0, common); // Prepend the common HLSL code to the final shader code
 	std::string s = template_vs[type] + ".hlsl";
 	const char* notionalSourceName = s.c_str();
-	CompileShader(hlsl_final, vs_model_, ppHostShader, notionalSourceName);
+	CompileShader(hlsl_final, vs_model_, ppHostShader, notionalSourceName, vulkan);
 }
 
 
-Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(const VertexShaderType type, IntermediateVertexShader intermediateShader, bool exportHLSL) {
+Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(const VertexShaderType type, IntermediateVertexShader intermediateShader, bool vulkan, bool exportHLSL) {
 
 
 	Microsoft::WRL::ComPtr<IDxcBlob> pCompiledShader;
@@ -651,7 +652,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(const VertexShaderType 
 		&intermediateShader,
 		pCompiledShader.GetAddressOf(),
 		type,
-		exportHLSL
+		exportHLSL, vulkan
 	);
 
 	return pCompiledShader;
@@ -707,7 +708,7 @@ extern void ParseVshFunction
 	}
 }
 
-const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool exportHLSL)
+const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool Vulkan, bool exportHLSL)
 {
 
 	int32_t type = 0;
@@ -775,6 +776,7 @@ const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DW
 			std::launch::async,
 			AsyncCreateVertexShader, (VertexShaderType)type,
 			std::move(intermediateShader),  // Move to avoid copy issues
+			Vulkan,
 			exportHLSL
 		);
 

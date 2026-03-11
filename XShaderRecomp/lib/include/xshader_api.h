@@ -9,9 +9,10 @@
 * \param pXboxFunction: Pointer to the Xbox shader function microcode. 
 * \param pXboxFunctionSize: Size of the Xbox shader function microcode in bytes. 
 * \param outSize: Output parameter that will receive the size of the returned shader blob in bytes.
+* \param Vulkan: Specify if shader should be compiled with spirv features.
 * \param exportHLSL: if true, the HLSL source code of the shader will be exported to the user data directory (e.g. %APPDATA%/XShaderRecomp/HLSL) for debugging purposes. 
 */
-const uint8_t* XSR_CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool exportHLSL);
+const uint8_t* XSR_CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool Vulkan, bool exportHLSL);
 
 /**
 * \brief Attempt to get vertex declaration information for the given vertex shader handle, return a valid pointer if the creation succeeded, otherwise return nullptr.

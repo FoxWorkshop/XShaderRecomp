@@ -1,9 +1,9 @@
 #include "include/xshader_api.h"
 #include "vertex_shader.h"
 
-const uint8_t* XSR_CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool exportHLSL)
+const uint8_t* XSR_CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool Vulkan, bool exportHLSL)
 {
-	return CreateRecompiledShader(handle, pXboxFunction, pXboxFunctionSize, outSize, exportHLSL);
+	return CreateRecompiledShader(handle, pXboxFunction, pXboxFunctionSize, outSize, Vulkan, exportHLSL);
 }
 
 
