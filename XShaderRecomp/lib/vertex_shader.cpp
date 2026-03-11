@@ -590,7 +590,6 @@ extern HRESULT CompileShader
 
 
 
-static int count = 0;
 // recompile xbox vertex shader function
 void CompileVertexShader
 (
@@ -615,28 +614,35 @@ void CompileVertexShader
 	hlsl_stream << g_ShaderSources.vertexShaderTemplateHlsl[type][1]; // Finish with the HLSL template footer
 
 
+	std::string hlsl_final = hlsl_stream.str();
+	hlsl_final.insert(0, common); // Prepend the common HLSL code to the final shader code
+
 	if (exportHLSL)
 	{
-		std::string hlsl_streamExport = "#include \"common_vs.hlsli\"\n\n";
-		hlsl_streamExport += hlsl_stream.str();
-
-		//printf("Create Vertex Shader ID %d\n", count);
 		std::string shaderFolder = GetUserDataDirectory().string() + "/XShaderRecomp/out/";
 
 		std::filesystem::create_directories(shaderFolder);
 
 		if (std::filesystem::exists(shaderFolder))
 		{
-			std::string shaderName = shaderFolder + "/VertexShader_" + std::to_string(count++) + ".hlsl";
+			std::string shaderName = shaderFolder + "/VertexShader_#ID_" + std::to_string(rand() % INT16_MAX) + ".hlsl";
+			int failsafe = 0;
+			while (std::filesystem::exists(shaderName))
+			{
+				shaderName = shaderFolder + "/VertexShader_#ID_" + std::to_string(rand() % INT16_MAX) + ".hlsl";
+
+				if (++failsafe >= 1000)
+				{
+					break;
+				}
+			}
 			std::ofstream  outFile2(shaderName, std::ios::app);
-			outFile2 << hlsl_streamExport << '\n';
+			outFile2 << hlsl_final << '\n';
 			outFile2.close();
+
 		}
 	}
 
-
-	std::string hlsl_final = hlsl_stream.str();
-	hlsl_final.insert(0, common); // Prepend the common HLSL code to the final shader code
 	std::string s = template_vs[type] + ".hlsl";
 	const char* notionalSourceName = s.c_str();
 	CompileShader(hlsl_final, vs_model_, ppHostShader, notionalSourceName, vulkan);
