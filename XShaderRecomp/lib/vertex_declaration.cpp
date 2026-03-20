@@ -1,4 +1,4 @@
-
+#include "pch.h"
 #include <array>
 #include <algorithm>
 #include "vertex_declaration.h"
@@ -110,50 +110,50 @@ private:
 		{
 		case X_D3DVSDT_FLOAT1: // 0x12:
 			HostVertexElementDataType = D3DDECLTYPE_FLOAT1;
-			HostVertexElementByteSize = 1 * sizeof(FLOAT);
+			HostVertexElementByteSize = 1 * sizeof(float);
 			break;
 		case X_D3DVSDT_FLOAT2: // 0x22:
 			HostVertexElementDataType = D3DDECLTYPE_FLOAT2;
-			HostVertexElementByteSize = 2 * sizeof(FLOAT);
+			HostVertexElementByteSize = 2 * sizeof(float);
 			break;
 		case X_D3DVSDT_FLOAT3: // 0x32:
 			HostVertexElementDataType = D3DDECLTYPE_FLOAT3;
-			HostVertexElementByteSize = 3 * sizeof(FLOAT);
+			HostVertexElementByteSize = 3 * sizeof(float);
 			break;
 		case X_D3DVSDT_FLOAT4: // 0x42:
 			HostVertexElementDataType = D3DDECLTYPE_FLOAT4;
-			HostVertexElementByteSize = 4 * sizeof(FLOAT);
+			HostVertexElementByteSize = 4 * sizeof(float);
 			break;
 		case X_D3DVSDT_D3DCOLOR: // 0x40:
 			HostVertexElementDataType = D3DDECLTYPE_D3DCOLOR;
-			HostVertexElementByteSize = 1 * sizeof(DWORD);
+			HostVertexElementByteSize = 1 * sizeof(uint32_t);
 			break;
 		case X_D3DVSDT_SHORT2: // 0x25:
 			HostVertexElementDataType = D3DDECLTYPE_SHORT2;
-			HostVertexElementByteSize = 2 * sizeof(SHORT);
+			HostVertexElementByteSize = 2 * sizeof(int16_t);
 			break;
 		case X_D3DVSDT_SHORT4: // 0x45:
 			HostVertexElementDataType = D3DDECLTYPE_SHORT4;
-			HostVertexElementByteSize = 4 * sizeof(SHORT);
+			HostVertexElementByteSize = 4 * sizeof(int16_t);
 			break;
 		case X_D3DVSDT_NORMSHORT1: // 0x11:
 		
 			HostVertexElementDataType = D3DDECLTYPE_SHORT2N;
-			HostVertexElementByteSize = 2 * sizeof(SHORT);
+			HostVertexElementByteSize = 2 * sizeof(int16_t);
 	
 			XboxVertexElementByteSize = 1 * sizeof(int16_t);
 			break;
 		case X_D3DVSDT_NORMSHORT2: // 0x21:
 
 			HostVertexElementDataType = D3DDECLTYPE_SHORT2N;
-			HostVertexElementByteSize = 2 * sizeof(SHORT);
+			HostVertexElementByteSize = 2 * sizeof(int16_t);
 			// No need for patching in D3D9
 
 			break;
 		case X_D3DVSDT_NORMSHORT3: // 0x31:
 		
 			HostVertexElementDataType = D3DDECLTYPE_SHORT4N;
-			HostVertexElementByteSize = 4 * sizeof(SHORT);
+			HostVertexElementByteSize = 4 * sizeof(int16_t);
 	
 			XboxVertexElementByteSize = 3 * sizeof(int16_t);
 			break;
@@ -161,67 +161,67 @@ private:
 
 		{
 			HostVertexElementDataType = D3DDECLTYPE_SHORT4N;
-			HostVertexElementByteSize = 4 * sizeof(SHORT);
+			HostVertexElementByteSize = 4 * sizeof(int16_t);
 			// No need for patching in D3D9
 		}
 
 		break;
 		case X_D3DVSDT_NORMPACKED3: // 0x16:
 			HostVertexElementDataType = D3DDECLTYPE_FLOAT3;
-			HostVertexElementByteSize = 3 * sizeof(FLOAT);
-			XboxVertexElementByteSize = 1 * sizeof(DWORD);
+			HostVertexElementByteSize = 3 * sizeof(float);
+			XboxVertexElementByteSize = 1 * sizeof(uint32_t);
 			break;
 		case X_D3DVSDT_SHORT1: // 0x15:
 			HostVertexElementDataType = D3DDECLTYPE_SHORT2;
-			HostVertexElementByteSize = 2 * sizeof(SHORT);
-			XboxVertexElementByteSize = 1 * sizeof(SHORT);
+			HostVertexElementByteSize = 2 * sizeof(int16_t);
+			XboxVertexElementByteSize = 1 * sizeof(int16_t);
 			break;
 		case X_D3DVSDT_SHORT3: // 0x35:
 			HostVertexElementDataType = D3DDECLTYPE_SHORT4;
-			HostVertexElementByteSize = 4 * sizeof(SHORT);
-			XboxVertexElementByteSize = 3 * sizeof(SHORT);
+			HostVertexElementByteSize = 4 * sizeof(int16_t);
+			XboxVertexElementByteSize = 3 * sizeof(int16_t);
 			break;
 		case X_D3DVSDT_PBYTE1: // 0x14:
 
 			HostVertexElementDataType = D3DDECLTYPE_UBYTE4N;
-			HostVertexElementByteSize = 4 * sizeof(BYTE);
+			HostVertexElementByteSize = 4 * sizeof(uint8_t);
 
 
-			XboxVertexElementByteSize = 1 * sizeof(BYTE);
+			XboxVertexElementByteSize = 1 * sizeof(uint8_t);
 			break;
 		case X_D3DVSDT_PBYTE2: // 0x24:
 			//if (g_D3DCaps.DeclTypes & D3DDTCAPS_UBYTE4N) {
 		{
 			HostVertexElementDataType = D3DDECLTYPE_UBYTE4N;
-			HostVertexElementByteSize = 4 * sizeof(BYTE);
+			HostVertexElementByteSize = 4 * sizeof(uint8_t);
 		}
 
-		XboxVertexElementByteSize = 2 * sizeof(BYTE);
+		XboxVertexElementByteSize = 2 * sizeof(uint8_t);
 		break;
 		case X_D3DVSDT_PBYTE3: // 0x34:
 			//if (g_D3DCaps.DeclTypes & D3DDTCAPS_UBYTE4N) {
 			HostVertexElementDataType = D3DDECLTYPE_UBYTE4N;
-			HostVertexElementByteSize = 4 * sizeof(BYTE);
+			HostVertexElementByteSize = 4 * sizeof(uint8_t);
 			/**}
 			else {
 				HostVertexElementDataType = D3DDECLTYPE_FLOAT3;
-				HostVertexElementByteSize = 3 * sizeof(FLOAT);
+				HostVertexElementByteSize = 3 * sizeof(float);
 			}*/
-			XboxVertexElementByteSize = 3 * sizeof(BYTE);
+			XboxVertexElementByteSize = 3 * sizeof(uint8_t);
 			break;
 		case X_D3DVSDT_PBYTE4: // 0x44:
 			//if (g_D3DCaps.DeclTypes & D3DDTCAPS_UBYTE4N) {
 		{
 			HostVertexElementDataType = D3DDECLTYPE_UBYTE4N;
-			HostVertexElementByteSize = 4 * sizeof(BYTE);
+			HostVertexElementByteSize = 4 * sizeof(uint8_t);
 			// No need for patching when PC supports D3DDECLTYPE_UBYTE4N
 		}
 
 		break;
 		case X_D3DVSDT_FLOAT2H: // 0x72:
 			HostVertexElementDataType = D3DDECLTYPE_FLOAT4;
-			HostVertexElementByteSize = 4 * sizeof(FLOAT);
-			XboxVertexElementByteSize = 3 * sizeof(FLOAT);
+			HostVertexElementByteSize = 4 * sizeof(float);
+			XboxVertexElementByteSize = 3 * sizeof(float);
 			break;
 		case X_D3DVSDT_NONE: // 0x02:
 			assert(false); // Should already be handled above
@@ -313,8 +313,8 @@ public:
 		D3DVERTEXELEMENT9* HostVertexElements = (D3DVERTEXELEMENT9*)calloc(1, HostDeclarationSize);
 		pCurrentHostVertexElement = HostVertexElements;
 
-		std::array<byte, X_VSH_MAX_ATTRIBUTES> orderedRegisterIndices;
-		for (byte i = 0; i < orderedRegisterIndices.size(); i++)
+		std::array<uint8_t, X_VSH_MAX_ATTRIBUTES> orderedRegisterIndices;
+		for (uint8_t i = 0; i < orderedRegisterIndices.size(); i++)
 			orderedRegisterIndices[i] = i;
 
 		// Make sure we convert registers in order of offset, per stream
@@ -505,7 +505,7 @@ static X_D3DVertexShader* XboxVertexShaderFromFVF(size_t xboxFvf)
 		nrBlendWeights = 4;
 		break;
 	case X_D3DFVF_POSITION_MASK: /*Keep nrPositionFloats set to 3*/  break;
-		DEFAULT_UNREACHABLE;
+		UNREACHABLE;
 	}
 
 	// Assign vertex element (attribute) slots
@@ -543,7 +543,7 @@ static X_D3DVertexShader* XboxVertexShaderFromFVF(size_t xboxFvf)
 		pSlot = &declaration.Slots[X_D3DVSDE_DIFFUSE];
 		pSlot->Format = X_D3DVSDT_D3DCOLOR;
 		pSlot->Offset = offset;
-		offset += sizeof(DWORD) * 1;
+		offset += sizeof(uint32_t) * 1;
 	}
 
 	if (xboxFvf & X_D3DFVF_SPECULAR)
@@ -552,7 +552,7 @@ static X_D3DVertexShader* XboxVertexShaderFromFVF(size_t xboxFvf)
 		pSlot = &declaration.Slots[X_D3DVSDE_SPECULAR];
 		pSlot->Format = X_D3DVSDT_D3DCOLOR;
 		pSlot->Offset = offset;
-		offset += sizeof(DWORD) * 1;
+		offset += sizeof(uint32_t) * 1;
 	}
 
 	// Write Texture Coordinates
@@ -590,9 +590,9 @@ static X_D3DVertexShader* XboxVertexShaderFromFVF(size_t xboxFvf)
 	return &g_Xbox_VertexShader_ForFVF;
 }
 
-inline boolean VshHandleIsVertexShader(size_t Handle) { return (Handle & X_D3DFVF_RESERVED0) ? TRUE : FALSE; }
-inline boolean VshHandleIsFVF(size_t Handle) { return !VshHandleIsVertexShader(Handle); }
-inline boolean VshHandleIsPassthrough(size_t Handle) {
+inline bool VshHandleIsVertexShader(size_t Handle) { return (Handle & X_D3DFVF_RESERVED0) ? true : false; }
+inline bool VshHandleIsFVF(size_t Handle) { return !VshHandleIsVertexShader(Handle); }
+inline bool VshHandleIsPassthrough(size_t Handle) {
 	return VshHandleIsFVF(Handle) && ((Handle & X_D3DFVF_POSITION_MASK) == X_D3DFVF_XYZRHW);
 }
 

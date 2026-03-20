@@ -1,3 +1,22 @@
+#ifndef _WIN32
+#include <cstddef>
+#include <cstdint>
+#ifndef BYTE
+typedef unsigned char BYTE;
+#endif
+#ifndef WORD
+typedef uint16_t WORD;
+#endif
+#ifndef DWORD
+typedef uint32_t DWORD;
+#endif
+#ifndef UINT
+typedef unsigned int UINT;
+#endif
+#ifndef BOOL
+typedef bool BOOL;
+#endif
+#endif
 
 #define X_VSH_MAX_ATTRIBUTES          16
 #define X_VSH_MAX_STREAMS             16

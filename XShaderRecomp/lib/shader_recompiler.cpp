@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "shader_recompiler.h"
 #include "shader_common.h"
 

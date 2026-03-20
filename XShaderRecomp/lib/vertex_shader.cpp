@@ -3,6 +3,8 @@
 
 //#define _DEBUG_TRACK_VS
 
+#include "pch.h"
+
 #include <sstream>
 #include <unordered_map>
 #include <array>
@@ -13,7 +15,6 @@
 #include "shader.h"
 #include <map>
 
-#include <conio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -656,7 +657,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(const VertexShaderType 
 
 	CompileVertexShader(
 		&intermediateShader,
-		pCompiledShader.GetAddressOf(),
+		&pCompiledShader,
 		type,
 		exportHLSL, vulkan
 	);
