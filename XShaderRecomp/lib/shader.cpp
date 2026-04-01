@@ -1,8 +1,10 @@
 
+#include "pch.h"
 #include "shader.h"
 #include <filesystem>
 #include <fstream>
 #include <array>
+#include <chrono>
 #include <thread>
 #include <sstream>
 #include "generated_shader_templates.h"
@@ -25,7 +27,7 @@ std::ifstream OpenWithRetry(const std::string& path)
 	auto fstream = std::ifstream(path);
 	int failures = 0;
 	while (fstream.fail()) {
-		Sleep(50);
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		fstream = std::ifstream(path);
 
 		if (failures++ > 10) {
