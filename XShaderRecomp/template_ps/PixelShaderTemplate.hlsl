@@ -347,19 +347,19 @@ float4 PostProcessTexel(const int ts, float4 t)
 // abstracting away the specifics of accessing above sampler declarations (usefull for future Direct3D 10+ sampler arrays)
 float4 Sample2D(int ts, float3 s)
 {
-    float4 result = g_Texture2DDescriptorHeap[GetTextureStage(ts, 1)].Sample(g_SamplerDescriptorHeap[GetSamplerState(i)], s.xy); // Ignores s.z (and whatever it's set to, will be optimized away by the compiler, see [1] below)
+    float4 result = g_Texture2DDescriptorHeap[GetTextureStage(ts, 1)].Sample(g_SamplerDescriptorHeap[GetSamplerState(ts)], s.xy); // Ignores s.z (and whatever it's set to, will be optimized away by the compiler, see [1] below)
     return PostProcessTexel(ts, result);
 }
 
 float4 Sample3D(int ts, float3 s)
 {
-    float4 result = g_Texture3DDescriptorHeap[GetTextureStage(ts, 2)].Sample(g_SamplerDescriptorHeap[GetSamplerState(i)], s.xyz);
+    float4 result = g_Texture3DDescriptorHeap[GetTextureStage(ts, 2)].Sample(g_SamplerDescriptorHeap[GetSamplerState(ts)], s.xyz);
     return PostProcessTexel(ts, result);
 }
 
 float4 Sample6F(int ts, float3 s)
 {
-    float4 result = g_TextureCubeDescriptorHeap[GetTextureStage(ts, 3)].Sample(g_SamplerDescriptorHeap[GetSamplerState(i)], s.xyz);
+    float4 result = g_TextureCubeDescriptorHeap[GetTextureStage(ts, 3)].Sample(g_SamplerDescriptorHeap[GetSamplerState(ts)], s.xyz);
     return PostProcessTexel(ts, result);
 }
 
