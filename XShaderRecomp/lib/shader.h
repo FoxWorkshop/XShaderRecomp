@@ -144,7 +144,6 @@ X_D3DRESOURCETYPE;
 
 struct ShaderSources {
     // Pixel Shader
-	std::string pixelShaderCommon;
     std::string pixelShaderTemplateHlsl[3];
 
     std::string fixedFunctionPixelShaderHlsl;
@@ -183,3 +182,4 @@ private:
 extern ShaderSources g_ShaderSources;
 
 extern std::string template_vs[VertexShaderTypeMax];
+extern std::string template_ps;

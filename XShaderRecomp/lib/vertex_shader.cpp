@@ -667,7 +667,6 @@ Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(const VertexShaderType 
 
 struct LazyVertexShader {
 	bool isReady = false;
-	void* pHostVertexShader = nullptr;
 	int referenceCount = 0;
 	std::vector<uint8_t> bytecode;
 	// Store the compiled blob directly instead of future

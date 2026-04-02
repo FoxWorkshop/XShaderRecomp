@@ -530,7 +530,6 @@ struct DecodedRegisterCombiner {
 
 extern bool g_UseFixedFunctionPixelShader;
 
-// PatrickvL's Dxbx pixel shader translation
-void DxbxUpdateActivePixelShader(); // NOPATCH
 
+const uint8_t* CreateRecompilePixelShader(X_D3DPIXELSHADERDEF* PSDef, size_t* outSize, bool vulkan, bool exportHLSL);
 #endif // PIXELSHADER_H
