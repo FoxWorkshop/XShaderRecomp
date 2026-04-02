@@ -345,21 +345,21 @@ float4 PostProcessTexel(const int ts, float4 t)
 
 // Actual texture sampling per texture stage (ts), using the sampling vector (s) as input,
 // abstracting away the specifics of accessing above sampler declarations (usefull for future Direct3D 10+ sampler arrays)
-float4 Sample2D(int i, int ts, float3 s)
+float4 Sample2D(int ts, float3 s)
 {
-    float4 result = g_Texture2DDescriptorHeap[GetTextureStage(i, ts)].Sample(g_SamplerDescriptorHeap[GetSamplerState(i)], s.xy); // Ignores s.z (and whatever it's set to, will be optimized away by the compiler, see [1] below)
+    float4 result = g_Texture2DDescriptorHeap[GetTextureStage(ts, 1)].Sample(g_SamplerDescriptorHeap[GetSamplerState(i)], s.xy); // Ignores s.z (and whatever it's set to, will be optimized away by the compiler, see [1] below)
     return PostProcessTexel(ts, result);
 }
 
-float4 Sample3D(int i, int ts, float3 s)
+float4 Sample3D(int ts, float3 s)
 {
-    float4 result = g_Texture3DDescriptorHeap[GetTextureStage(i, ts)].Sample(g_SamplerDescriptorHeap[GetSamplerState(i)], s.xyz);
+    float4 result = g_Texture3DDescriptorHeap[GetTextureStage(ts, 2)].Sample(g_SamplerDescriptorHeap[GetSamplerState(i)], s.xyz);
     return PostProcessTexel(ts, result);
 }
 
-float4 Sample6F(int i, int ts, float3 s)
+float4 Sample6F(int ts, float3 s)
 {
-    float4 result = g_TextureCubeDescriptorHeap[GetTextureStage(i, ts)].Sample(g_SamplerDescriptorHeap[GetSamplerState(i)], s.xyz);
+    float4 result = g_TextureCubeDescriptorHeap[GetTextureStage(ts, 3)].Sample(g_SamplerDescriptorHeap[GetSamplerState(i)], s.xyz);
     return PostProcessTexel(ts, result);
 }
 
@@ -407,27 +407,27 @@ float3 DoBumpEnv(const float4 TexCoord, const float4 BumpEnvMat, const float4 sr
 // For ease of understanding, all follow this plan : Optional specifics, or dot calculation (some with normal selection) and sampling vector determination. All end by deriving a value and assigning this to the stage's texture register.
 
 #define PS_TEXTUREMODES_NONE(ts)                                                                    v = black;           t[ts] = v // Seems to work
-#define PS_TEXTUREMODES_PROJECT2D(i, ts)                                          s = iT[ts].xyz;   v = Sample2D(i, ts, s); t[ts] = v // Seems to work (are x/w and y/w implicit?) [1]
+#define PS_TEXTUREMODES_PROJECT2D(ts)                                          s = iT[ts].xyz;   v = Sample2D(ts, s); t[ts] = v // Seems to work (are x/w and y/w implicit?) [1]
 /*0123 tex          */
-#define PS_TEXTUREMODES_PROJECT3D(i, ts)                                          s = iT[ts].xyz;      v = Sample3D(i, ts, s); t[ts] = v // Seems to work (is z/w implicit?)
+#define PS_TEXTUREMODES_PROJECT3D(ts)                                          s = iT[ts].xyz;      v = Sample3D(ts, s); t[ts] = v // Seems to work (is z/w implicit?)
 /*0123 tex          */
-#define PS_TEXTUREMODES_CUBEMAP(i, ts)                                            s = iT[ts].xyz;      v = Sample6F(i, ts, s); t[ts] = v // TODO : Test
+#define PS_TEXTUREMODES_CUBEMAP(ts)                                            s = iT[ts].xyz;      v = Sample6F(ts, s); t[ts] = v // TODO : Test
 #define PS_TEXTUREMODES_PASSTHRU(ts)                                                                v = Passthru(ts);    t[ts] = v // Seems to work
 #define PS_TEXTUREMODES_CLIPPLANE(ts)            PS_COMPAREMODE_ ## ts(iT[ts]);                     v = black;           t[ts] = v // Seems to work (setting black to texture register, in case it gets read)
-#define PS_TEXTUREMODES_BUMPENVMAP(i, ts)                                         s = BumpEnv(ts);     v = Sample2D(i, ts, s); t[ts] = v // Seems to work
+#define PS_TEXTUREMODES_BUMPENVMAP(ts)                                         s = BumpEnv(ts);     v = Sample2D(ts, s); t[ts] = v // Seems to work
 #define PS_TEXTUREMODES_BUMPENVMAP_LUM(ts)       PS_TEXTUREMODES_BUMPENVMAP(ts);                    v.rgb *= LSO(ts);    t[ts] = v // TODO : Test
-#define PS_TEXTUREMODES_BRDF(ts)                                               s = Brdf(ts);        v = Sample3D(i, ts, s); t[ts] = v // TODO : Test (t[ts-2] is 16 bit eyePhi,eyeSigma; t[ts-1] is lightPhi,lightSigma)
-#define PS_TEXTUREMODES_DOT_ST(i, ts)               CalcDot(ts); n = Normal2(ts); s = n;               v = Sample2D(i, ts, s); t[ts] = v // TODO : Test
+#define PS_TEXTUREMODES_BRDF(ts)                                               s = Brdf(ts);        v = Sample3D(ts, s); t[ts] = v // TODO : Test (t[ts-2] is 16 bit eyePhi,eyeSigma; t[ts-1] is lightPhi,lightSigma)
+#define PS_TEXTUREMODES_DOT_ST(ts)               CalcDot(ts); n = Normal2(ts); s = n;               v = Sample2D(ts, s); t[ts] = v // TODO : Test
 #define PS_TEXTUREMODES_DOT_ZW(ts)               CalcDot(ts); n = Normal2(ts); if (n.y==0) v=1;else v = n.x / n.y;       t[ts] = v // TODO : Make depth-check use result of division, but how?
-#define PS_TEXTUREMODES_DOT_RFLCT_DIFF(i, ts)       CalcDot(ts); n = Normal2(ts); s = n;               v = Sample6F(i, ts, s); t[ts] = v // TODO : Test
-#define PS_TEXTUREMODES_DOT_RFLCT_SPEC(i, ts)       CalcDot(ts); n = Normal3(ts); s = Reflect(n, Eye); v = Sample6F(i, ts, s); t[ts] = v // TODO : Test
-#define PS_TEXTUREMODES_DOT_STR_3D(i, ts)           CalcDot(ts); n = Normal3(ts); s = n;               v = Sample3D(i, ts, s); t[ts] = v // TODO : Test
-#define PS_TEXTUREMODES_DOT_STR_CUBE(i, ts)         CalcDot(ts); n = Normal3(ts); s = n;               v = Sample6F(i, ts, s); t[ts] = v // TODO : Test
-#define PS_TEXTUREMODES_DPNDNT_AR(i, ts)                                          s = src(ts).arg;     v = Sample2D(i, ts, s); t[ts] = v // TODO : Test [1]
-#define PS_TEXTUREMODES_DPNDNT_GB(i, ts)                                          s = src(ts).gba;     v = Sample2D(i, ts, s); t[ts] = v // TODO : Test [1]
+#define PS_TEXTUREMODES_DOT_RFLCT_DIFF(ts)       CalcDot(ts); n = Normal2(ts); s = n;               v = Sample6F(ts, s); t[ts] = v // TODO : Test
+#define PS_TEXTUREMODES_DOT_RFLCT_SPEC(ts)       CalcDot(ts); n = Normal3(ts); s = Reflect(n, Eye); v = Sample6F(ts, s); t[ts] = v // TODO : Test
+#define PS_TEXTUREMODES_DOT_STR_3D(ts)           CalcDot(ts); n = Normal3(ts); s = n;               v = Sample3D(ts, s); t[ts] = v // TODO : Test
+#define PS_TEXTUREMODES_DOT_STR_CUBE(ts)         CalcDot(ts); n = Normal3(ts); s = n;               v = Sample6F(ts, s); t[ts] = v // TODO : Test
+#define PS_TEXTUREMODES_DPNDNT_AR(ts)                                          s = src(ts).arg;     v = Sample2D(ts, s); t[ts] = v // TODO : Test [1]
+#define PS_TEXTUREMODES_DPNDNT_GB(ts)                                          s = src(ts).gba;     v = Sample2D(ts, s); t[ts] = v // TODO : Test [1]
 
 #define PS_TEXTUREMODES_DOTPRODUCT(ts)           CalcDot(ts);                                       v = float4(dm, 0);   t[ts] = v // TODO : Test all dot mapping (setting texture register, in case it gets read) 
-#define PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST(i, ts) CalcDot(ts); n = Normal3(ts); s = Reflect(n, C0);  v = Sample6F(i, ts, s); t[ts] = v // TODO : Test
+#define PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST(ts) CalcDot(ts); n = Normal3(ts); s = Reflect(n, C0);  v = Sample6F(ts, s); t[ts] = v // TODO : Test
 
 
 struct PS_INPUT // Declared identical to vertex shader output (see VS_OUTPUT)
