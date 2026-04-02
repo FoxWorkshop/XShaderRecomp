@@ -967,6 +967,9 @@ private:
 
 const uint8_t* CreateRecompilePixelShader(X_D3DPIXELSHADERDEF* PSDef, size_t* outSize, bool vulkan, bool exportHLSL)
 {
+
+	g_ShaderSources.Update();
+
 	HostPSDef CompletePSDef;
 	CompletePSDef.PSDef = *PSDef;
 
