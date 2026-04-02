@@ -20,7 +20,7 @@ std::string template_vs[VertexShaderTypeMax] =
 	XShaderRecomp::Templates::_2D_vs,
 };
 
-std::string template_ps;
+std::string template_ps = XShaderRecomp::Templates::PixelShaderTemplate;
 
 
 std::ifstream OpenWithRetry(const std::string& path)
