@@ -432,7 +432,7 @@ float3 DoBumpEnv(const float4 TexCoord, const float4 BumpEnvMat, const float4 sr
 
 struct PS_INPUT // Declared identical to vertex shader output (see VS_OUTPUT)
 {
-	float2 iPos : VPOS;   // Screen space x,y pixel location
+    float4 iPos : SV_Position; // Screen space x,y pixel location (changed from float 2 IPos)
 	float4 iD0  : COLOR0; // Front-facing primary (diffuse) vertex color (clamped to 0..1)
 	float4 iD1  : COLOR1; // Front-facing secondary (specular) vertex color (clamped to 0..1)
 	float  iFog : FOG;
@@ -443,12 +443,12 @@ struct PS_INPUT // Declared identical to vertex shader output (see VS_OUTPUT)
 	float4 iT1  : TEXCOORD1; // Texture Coord 1
 	float4 iT2  : TEXCOORD2; // Texture Coord 2
 	float4 iT3  : TEXCOORD3; // Texture Coord 3
-	float  iFF  : VFACE; // Front facing if > 0
+    uint iFF : SV_IsFrontFace; // Front facing if true (changed from float VFACE to uint SV_IsFrontFace)
 };
 
 struct PS_OUTPUT
 {
-	float4 oR0 : COLOR;
+    float4 oR0 : SV_Target0;
 };
 
 PS_OUTPUT main(const PS_INPUT xIn)
