@@ -39,8 +39,6 @@ add_library(XShaderRecompLib STATIC
     "lib/shader.cpp"
     "lib/shader.h"
     "lib/shader_code.h"
-    "lib/shader_recompiler.cpp"
-    "lib/shader_recompiler.h"
     "lib/vertex_shader.cpp" 
     "lib/vertex_shader.h"
     "lib/pixel_shader.cpp"

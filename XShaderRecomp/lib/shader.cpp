@@ -15,11 +15,12 @@ ShaderSources g_ShaderSources;
 std::string template_vs[VertexShaderTypeMax] =
 {
 	XShaderRecomp::Templates::VertexShaderTemplate,
-	XShaderRecomp::Templates::bones_int2, 
+	XShaderRecomp::Templates::bones_int2,
 	XShaderRecomp::Templates::bones_int4,
 	XShaderRecomp::Templates::_2D_vs,
 };
 
+std::string template_ps = XShaderRecomp::Templates::PixelShaderTemplate;
 
 
 std::ifstream OpenWithRetry(const std::string& path)
@@ -50,40 +51,34 @@ int ShaderSources::Update() {
 	return shaderVersionLoadedFromDisk;
 }
 
-void ShaderSources::LoadShadersFromDisk() 
+void ShaderSources::LoadShadersFromDisk()
 {
 
-
-
 	// Pixel Shader Template
-	this->pixelShaderCommon = XShaderRecomp::Templates::common_ps;
+	std::string hlsl = XShaderRecomp::Templates::PixelShaderTemplate;
+
+	// Split the HLSL file on insertion points
+	std::array<std::string, 2> insertionPoints = {
+		"// <HARDCODED STATE GOES HERE>\n",
+		"// <XBOX SHADER PROGRAM GOES HERE>\n",
+	};
+	int pos = 0;
+	for (int i = 0; i < insertionPoints.size(); i++)
 	{
+		auto insertionPoint = insertionPoints[i];
+		auto index = hlsl.find(insertionPoint, pos);
 
-
-		std::string hlsl = XShaderRecomp::Templates::PixelShaderTemplate;
-
-		// Split the HLSL file on insertion points
-		std::array<std::string, 2> insertionPoints = {
-			"// <HARDCODED STATE GOES HERE>\n",
-			"// <XBOX SHADER PROGRAM GOES HERE>\n",
-		};
-		int pos = 0;
-		for (int i = 0; i < insertionPoints.size(); i++) 
-		{
-			auto insertionPoint = insertionPoints[i];
-			auto index = hlsl.find(insertionPoint, pos);
-
-			if (index == std::string::npos) {
-				// Handle broken shaders
-				this->pixelShaderTemplateHlsl[i] = "";
-			}
-			else {
-				this->pixelShaderTemplateHlsl[i] = hlsl.substr(pos, index - pos);
-				pos = index + insertionPoint.length();
-			}
+		if (index == std::string::npos) {
+			// Handle broken shaders
+			this->pixelShaderTemplateHlsl[i] = "";
 		}
-		this->pixelShaderTemplateHlsl[insertionPoints.size()] = hlsl.substr(pos);
+		else {
+			this->pixelShaderTemplateHlsl[i] = hlsl.substr(pos, index - pos);
+			pos = index + insertionPoint.length();
+		}
 	}
+	this->pixelShaderTemplateHlsl[insertionPoints.size()] = hlsl.substr(pos);
+
 
 
 	// Vertex Shader Template
@@ -96,7 +91,7 @@ void ShaderSources::LoadShadersFromDisk()
 		const std::string insertionPoint = "// <XBOX SHADER PROGRAM GOES HERE>\n";
 		auto index = hlsl.find(insertionPoint);
 
-		if (index == std::string::npos) 
+		if (index == std::string::npos)
 		{
 			// Handle broken shaders
 			this->vertexShaderTemplateHlsl[type][0] = hlsl;
