@@ -74,7 +74,7 @@ static const std::string register_str[16 + 2] = {
 	"sum",      // PS_REGISTER_V1R0_SUM = 0x0eL, // r
 	"prod",     // PS_REGISTER_EF_PROD =  0x0fL, // r
 
-	// Cxbx extension; Separate final combiner constant registers :
+	// extension; Separate final combiner constant registers :
 	"FC0",      // PS_REGISTER_FC0 =      0x10L, // r
 	"FC1",      // PS_REGISTER_FC1 =      0x11L, // r
 };
@@ -87,10 +87,13 @@ void RPSRegisterObject::Decode(uint8_t Value)
 	Reg = (PS_REGISTER)(Value & PS_REGISTER_MASK); // = 0x0f
 
 	// Validate correctness (see NOTE below)
+#ifndef NDEBUG
+
 	if (Reg == 6) 
 		printf("Unknown PS_REGISTER : 6\n");
 	if (Reg == 7) 
 		printf("Unknown PS_REGISTER : 7\n");
+#endif // NDEBUG
 }
 
 
@@ -175,7 +178,7 @@ void RPSCombinerStageChannel::Decode(uint32_t PSInputs, uint32_t PSOutputs, unsi
 			printf("All two outputs discarded\n");
 	}
 	else {
-		// if ((OutputAB.Reg == PS_REGISTER_DISCARD) && (OutputCD.Reg == PS_REGISTER_DISCARD) && (OutputMUX_SUM.Reg == PS_REGISTER_DISCARD)) LOG_TEST_CASE("All three outputs discarded"); // Test-case : XDK sample : Minnaert (on Stage2.Alpha)
+		// if ((OutputAB.Reg == PS_REGISTER_DISCARD) && (OutputCD.Reg == PS_REGISTER_DISCARD) && (OutputMUX_SUM.Reg == PS_REGISTER_DISCARD)) LOG_TEST_CASE("All three outputs discarded"); 
 	}
 
 	// Validate correctness (see NOTE below)
@@ -227,7 +230,7 @@ void RPSFinalCombiner::Decode(const uint32_t PSFinalCombinerInputsABCD, const ui
 	ClampSum = (FinalCombinerSettingFlags & PS_FINALCOMBINERSETTING_CLAMP_SUM) > 0;
 
 #ifndef NDEBUG
-	// Discover test-cases (see TODO below)
+
 	// if (Input[0].Channel != PS_CHANNEL_ALPHA) LOG_TEST_CASE("PS_CHANNEL_RGB/PS_CHANNEL_BLUE detected on final combiner A input"); // Note : test-case ModifyPixelShader uses PS_REGISTER_FOG.rgb and seems to expect .rgb handling (not PS_CHANNEL_BLUE's .b)
 	if (Input[4].Channel == PS_CHANNEL_ALPHA) 
 		printf("PS_CHANNEL_ALPHA detected on final combiner E input\n"); // Need test-case to determine how this should behave (calculating EF_PROD) : .aaa instead of .rgb?
@@ -755,7 +758,7 @@ void BuildShader(DecodedRegisterCombiner* pShader, std::stringstream& hlsl)
 		<< pShader->PSInputTexture[2] << ", "
 		<< pShader->PSInputTexture[3] << " };";
 
-	// Generate #defines required by CxbxPixelShaderTemplate.hlsl :
+	// Generate #defines required by PixelShaderTemplate.hlsl :
 	for (unsigned i = 1; i < PSH_XBOX_MAX_T_REGISTER_COUNT; i++) {
 		static const std::string dotmapping_str[8] = {
 			"PS_DOTMAPPING_ZERO_TO_ONE",		 // = 0x00L, // - * * *
@@ -966,9 +969,9 @@ constexpr int PSH_XBOX_CONSTANT_LUM = PSH_XBOX_CONSTANT_BEM + 4; // = 23..26
 // Which winding order to consider as the front face
 constexpr int PSH_XBOX_CONSTANT_FRONTFACE_FACTOR = PSH_XBOX_CONSTANT_LUM + 4; // = 27
 // Fog table information {Table mode, density, start and end}
-constexpr int CXBX_D3DPS_CONSTREG_FOGINFO = PSH_XBOX_CONSTANT_FRONTFACE_FACTOR + 1; // = 28
+constexpr int HOST_D3DPS_CONSTREG_FOGINFO = PSH_XBOX_CONSTANT_FRONTFACE_FACTOR + 1; // = 28
 //Fog enable flag
-constexpr int PSH_XBOX_CONSTANT_FOGENABLE = CXBX_D3DPS_CONSTREG_FOGINFO + 1; // = 29
+constexpr int PSH_XBOX_CONSTANT_FOGENABLE = HOST_D3DPS_CONSTREG_FOGINFO + 1; // = 29
 // This concludes the set of constants that need to be set on host :
 constexpr int PSH_XBOX_CONSTANT_MAX = PSH_XBOX_CONSTANT_FOGENABLE + 1; // = 30
 

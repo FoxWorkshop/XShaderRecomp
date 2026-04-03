@@ -17,14 +17,6 @@
 
 #define VSH_MAX_INTERMEDIATE_COUNT (X_VSH_MAX_INSTRUCTION_COUNT * 3) // The maximum number of shader function slots
 
-typedef struct _CxbxVertexShaderStreamElement
-{
-	uint32_t XboxType; // The stream element data type (xbox)
-	uint32_t XboxByteSize; // The stream element data size (xbox)
-	uint8_t HostDataType; // The stream element data type (pc)
-	uint32_t HostByteSize; // The stream element data size (pc)
-}
-CxbxVertexShaderStreamElement;
 
 /* See host typedef struct _D3DVERTEXELEMENT9
 {
