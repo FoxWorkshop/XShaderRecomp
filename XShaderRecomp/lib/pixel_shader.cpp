@@ -593,7 +593,7 @@ typedef struct s_HostPSDef {
 		RC.FinalCombiner.Input[6/*G*/].Channel = PS_CHANNEL_ALPHA;
 	}
 
-	void PerformRuntimeAdjustments(DecodedRegisterCombiner& RC)
+	void FinalDecodeAdjustments(DecodedRegisterCombiner& RC)
 	{
 		RC.AlphaKill[0] = AlphaKill[0];
 		RC.AlphaKill[1] = AlphaKill[1];
@@ -784,6 +784,7 @@ void CombinerStageHlsl(std::stringstream& hlsl, RPSCombinerStageChannel& stage, 
 
 void BuildShader(DecodedRegisterCombiner* pShader, std::stringstream& hlsl)
 {
+	
 	hlsl << g_ShaderSources.pixelShaderTemplateHlsl[0]; // Start with the HLSL template header
 
 	hlsl << "\n#define ALPHAKILL {"
@@ -975,6 +976,8 @@ const uint8_t* CreateRecompilePixelShader(X_D3DPIXELSHADERDEF* PSDef, size_t* ou
 
 	DecodedRegisterCombiner RC = {};
 	RC.Decode(&(CompletePSDef.PSDef));
+	CompletePSDef.FinalDecodeAdjustments(RC);
+	
 
 
 	IDxcBlob* pShader = nullptr;
