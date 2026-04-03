@@ -60,9 +60,9 @@ struct PushConstants
 #define BEM(i) vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_ARRAY_OFFSET(19, i) )
 #define LUM(i) vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_ARRAY_OFFSET(23, i) )
 
-#define FRONTFACE_FACTOR vk::RawBufferLoad<float>(g_PushConstants.PixelShaderConstants + V_CBUFFER_OFFSET(27, 'x') )
+#define FRONTFACE_FACTOR vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_ARRAY_OFFSET(27, i) )
 #define FOGINFO  vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants + V_CBUFFER_OFFSET(28, 'x') )
-#define FOGENABLE vk::RawBufferLoad<float>(g_PushConstants.PixelShaderConstants + V_CBUFFER_OFFSET(29, 'x') )
+#define FOGENABLE vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_ARRAY_OFFSET(29, i) )
 
 
 
@@ -84,9 +84,9 @@ cbuffer PixelShaderConstants : register(b1, space4)
     // Constant registers used only in final combiner stage (part 2):
     float4 BEM_[4] : packoffset(c19); // Note : PSH_XBOX_CONSTANT_BEM for 4 texture stages
     float4 LUM_[4] : packoffset(c23); // Note : PSH_XBOX_CONSTANT_LUM for 4 texture stages
-    float FRONTFACE_FACTOR_ : packoffset(c27); // Note : PSH_XBOX_CONSTANT_LUM for 4 texture stages
+    float4 FRONTFACE_FACTOR_ : packoffset(c27); // Note : PSH_XBOX_CONSTANT_LUM for 4 texture stages
     float4 FOGINFO_ : packoffset(c28);
-    float FOGENABLE_ : packoffset(c29);
+    float4 FOGENABLE_ : packoffset(c29);
     
 }
 
@@ -454,77 +454,77 @@ struct PS_OUTPUT
 PS_OUTPUT main(const PS_INPUT xIn)
 {
 	// fogging
-	const float fogDepth      =   xIn.iFog.x; // Don't abs this value!
-	const int   fogTableMode  =   FOGINFO.x;
-	const float fogDensity    =   FOGINFO.y;
-	const float fogStart      =   FOGINFO.z;
-	const float fogEnd        =   FOGINFO.w;  
+    const float fogDepth = xIn.iFog.x; // Don't abs this value!
+    const int fogTableMode = FOGINFO.x;
+    const float fogDensity = FOGINFO.y;
+    const float fogStart = FOGINFO.z;
+    const float fogEnd = FOGINFO.w;
 
-	const int FOG_TABLE_NONE    = 0;
-	const int FOG_TABLE_EXP     = 1;
-	const int FOG_TABLE_EXP2    = 2;
-	const int FOG_TABLE_LINEAR  = 3;
+    const int FOG_TABLE_NONE = 0;
+    const int FOG_TABLE_EXP = 1;
+    const int FOG_TABLE_EXP2 = 2;
+    const int FOG_TABLE_LINEAR = 3;
  
-          float fogFactor;
+    float fogFactor;
 	
-	if(FOGENABLE == 0){
-	    fogFactor = 1;
-	}
-	else
-		{
-    if(fogTableMode == FOG_TABLE_NONE) 
-        fogFactor = fogDepth;  
-    if(fogTableMode == FOG_TABLE_EXP) 
-        fogFactor = 1 / exp(fogDepth * fogDensity); // 1 / e^(d * density)
-    if(fogTableMode == FOG_TABLE_EXP2) 
-        fogFactor = 1 / exp(pow(fogDepth * fogDensity, 2)); // 1 / e^((d * density)^2)
-    if(fogTableMode == FOG_TABLE_LINEAR) 
-        fogFactor = (fogEnd - fogDepth) / (fogEnd - fogStart);
-	}
+    if (FOGENABLE.x == 0)
+    {
+        fogFactor = 1;
+    }
+    else
+    {
+        if (fogTableMode == FOG_TABLE_NONE) 
+            fogFactor = fogDepth;
+        if (fogTableMode == FOG_TABLE_EXP) 
+            fogFactor = 1 / exp(fogDepth * fogDensity); // 1 / e^(d * density)
+        if (fogTableMode == FOG_TABLE_EXP2) 
+            fogFactor = 1 / exp(pow(fogDepth * fogDensity, 2)); // 1 / e^((d * density)^2)
+        if (fogTableMode == FOG_TABLE_LINEAR) 
+            fogFactor = (fogEnd - fogDepth) / (fogEnd - fogStart);
+    }
 	  
 	// Local constants
-	const float4 zero = 0;
-	const float4 half_ = 0.5; // = s_negbias(zero)
-	const float4 one = 1; // = s_comp(zero)
-	const float4 black = float4(0, 0, 0, 1); // opaque black
-	const float4 iT[4] = { xIn.iT0, xIn.iT1, xIn.iT2, xIn.iT3 }; // Map input texture coordinates to an array, for indexing purposes
+    const float4 zero = 0;
+    const float4 half_ = 0.5; // = s_negbias(zero)
+    const float4 one = 1; // = s_comp(zero)
+    const float4 black = float4(0, 0, 0, 1); // opaque black
+    const float4 iT[4] = { xIn.iT0, xIn.iT1, xIn.iT2, xIn.iT3 }; // Map input texture coordinates to an array, for indexing purposes
 
 	// Xbox register variables
-	float4 r0, r1;         // Temporary registers
-	float4 t[4];           // Texture coordinate registers
-	float4 v0, v1;         // Vertex color registers
-	float4 _discard;       // Write-only discard 'register' (we assume the HLSL compilers' optimization pass will remove assignments to this)
-	float4 fog;            // Read-only fog register, reading alpha is only allowed in final combiner
-	float4 sum, prod;      // Special purpose registers for xfc (final combiner) operation
+    float4 r0, r1; // Temporary registers
+    float4 t[4]; // Texture coordinate registers
+    float4 v0, v1; // Vertex color registers
+    float4 _discard; // Write-only discard 'register' (we assume the HLSL compilers' optimization pass will remove assignments to this)
+    float4 fog; // Read-only fog register, reading alpha is only allowed in final combiner
+    float4 sum, prod; // Special purpose registers for xfc (final combiner) operation
 
 	// Helper variables
-	int stage = 0;         // Write-only variable, emitted as prefix-comment before each 'opcode', used in C0 and C1 macro's (and should thus get optimized away), initialized to zero for use of C0 in PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST
-	float4 tmp;
-	float H, L;            // HILO (high/low) temps
-	float dot_[4];
-	float3 dm;             // Dot mapping temporary
-	float3 n;              // Normal vector (based on preceding dot_[] values)
-	float3 s;              // Actual texture coordinate sampling coordinates (temporary)
-	float4 v;              // Texture value (temporary)
+    int stage = 0; // Write-only variable, emitted as prefix-comment before each 'opcode', used in C0 and C1 macro's (and should thus get optimized away), initialized to zero for use of C0 in PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST
+    float4 tmp;
+    float H, L; // HILO (high/low) temps
+    float dot_[4];
+    float3 dm; // Dot mapping temporary
+    float3 n; // Normal vector (based on preceding dot_[] values)
+    float3 s; // Actual texture coordinate sampling coordinates (temporary)
+    float4 v; // Texture value (temporary)
 
 	// Determine if this is a front face or backface
-    bool isFrontFace = (FRONTFACE_FACTOR >= 0) ? xIn.iFF : !xIn.iFF;
-
+    bool isFrontFace = (FRONTFACE_FACTOR.x >= 0) ? xIn.iFF : !xIn.iFF;
 	// Initialize variables
-	r0 = r1 = black; // Note : r0.a/r1.a will be overwritten by t0.a/t1.a (opaque_black will be retained for PS_TEXTUREMODES_NONE)
+    r0 = r1 = black; // Note : r0.a/r1.a will be overwritten by t0.a/t1.a (opaque_black will be retained for PS_TEXTUREMODES_NONE)
 	// Note : VFACE/FrontFace has been unreliable, investigate again if some test-case shows bland colors
-	v0 = isFrontFace ? xIn.iD0 : xIn.iB0; // Diffuse front/back
-	v1 = isFrontFace ? xIn.iD1 : xIn.iB1; // Specular front/back
-	fog = float4(c_fog.rgb, saturate(fogFactor)); // color from PSH_XBOX_CONSTANT_FOG, alpha from vertex shader output / pixel shader input
+    v0 = isFrontFace ? xIn.iD0 : xIn.iB0; // Diffuse front/back
+    v1 = isFrontFace ? xIn.iD1 : xIn.iB1; // Specular front/back
+    fog = float4(c_fog.rgb, saturate(fogFactor)); // color from PSH_XBOX_CONSTANT_FOG, alpha from vertex shader output / pixel shader input
 
 	// Xbox shader program will be inserted here
     // <XBOX SHADER PROGRAM GOES HERE>
 	// End Xbox shader program
 
 	// Copy r0.rgba to output
-	PS_OUTPUT xOut;
+    PS_OUTPUT xOut;
 
-	xOut.oR0 = r0;
+    xOut.oR0 = r0;
 
-	return xOut;
+    return xOut;
 }
