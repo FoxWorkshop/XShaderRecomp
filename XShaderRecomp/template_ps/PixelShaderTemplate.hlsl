@@ -443,7 +443,7 @@ struct PS_INPUT // Declared identical to vertex shader output (see VS_OUTPUT)
 	float4 iT1  : TEXCOORD1; // Texture Coord 1
 	float4 iT2  : TEXCOORD2; // Texture Coord 2
 	float4 iT3  : TEXCOORD3; // Texture Coord 3
-    uint iFF : SV_IsFrontFace; // Front facing if true (changed from float VFACE to uint SV_IsFrontFace)
+    bool iFF : SV_IsFrontFace; // Front facing if true (changed from float VFACE to bool SV_IsFrontFace for modern shader support)
 };
 
 struct PS_OUTPUT
@@ -508,7 +508,7 @@ PS_OUTPUT main(const PS_INPUT xIn)
 	float4 v;              // Texture value (temporary)
 
 	// Determine if this is a front face or backface
-	bool isFrontFace = (xIn.iFF * FRONTFACE_FACTOR) >= 0;
+    bool isFrontFace = (FRONTFACE_FACTOR >= 0) ? xIn.iFF : !xIn.iFF;
 
 	// Initialize variables
 	r0 = r1 = black; // Note : r0.a/r1.a will be overwritten by t0.a/t1.a (opaque_black will be retained for PS_TEXTUREMODES_NONE)

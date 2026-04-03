@@ -916,6 +916,7 @@ const uint8_t* CreateRecompilePixelShader(X_D3DPIXELSHADERDEF* PSDef, size_t* ou
 
 	HostPSDef CompletePSDef;
 	CompletePSDef.PSDef = *PSDef;
+
 	for (int i = 0; i < 4; i++)
 	{
 		CompletePSDef.AlphaKill[i] = guestInfo->AlphaKill[i];
@@ -927,7 +928,6 @@ const uint8_t* CreateRecompilePixelShader(X_D3DPIXELSHADERDEF* PSDef, size_t* ou
 	DecodedRegisterCombiner RC = {};
 	RC.Decode(&(CompletePSDef.PSDef));
 	CompletePSDef.FinalDecodeAdjustments(RC);
-	
 
 
 	IDxcBlob* pShader = nullptr;
@@ -948,7 +948,7 @@ const uint8_t* CreateRecompilePixelShader(X_D3DPIXELSHADERDEF* PSDef, size_t* ou
 	*outSize = cachedShader->bytecode.size();
 	return cachedShader->bytecode.data();
 
-} 
+}
 
 
 // Mapping indices of Xbox register combiner constants to host pixel shader constants;
