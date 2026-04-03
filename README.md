@@ -32,8 +32,8 @@ Xbox shaders are stored in the XBE file directly, as mentioned before, some game
 
 Both vertex and pixel shader stages use three constant buffers:
 
-* Vertex shader constants: 4096 bytes (256 `float4` registers)
-* Pixel shader constants: 3584 bytes (224 `float4` registers)
+* Vertex shader constants: 3488 bytes (3472 bytes with Fixed Function emulation) 
+* Pixel shader constants: 480 bytes
 * Shared constants: Used specifically by Shadow Recompiled
 
 Vertex and pixel shader constants are copied directly from the guest render device, and shaders expect them in little-endian format.
