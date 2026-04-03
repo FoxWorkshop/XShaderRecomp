@@ -8,9 +8,9 @@ const uint8_t* XSR_CreateRecompiledVertexShader(size_t handle, uint32_t* pXboxFu
 	return CreateRecompiledShader(handle, pXboxFunction, pXboxFunctionSize, outSize, Vulkan, exportHLSL);
 }
 
-const uint8_t* XSR_CreateRecompiledPixelShader(void* psDef, size_t* outSize, bool Vulkan, bool exportHLSL)
+const uint8_t* XSR_CreateRecompiledPixelShader(void* psDef, size_t* outSize, pixelShader_GuestInfo* psGuestInfo, bool Vulkan, bool exportHLSL)
 {
-	return CreateRecompilePixelShader((X_D3DPIXELSHADERDEF*)psDef, outSize, Vulkan, exportHLSL);
+	return CreateRecompilePixelShader((X_D3DPIXELSHADERDEF*)psDef, outSize, psGuestInfo, Vulkan, exportHLSL);
 }
 
 

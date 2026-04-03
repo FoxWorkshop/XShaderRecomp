@@ -4,7 +4,7 @@
 #include "pixel_shader.h"
 #include <fstream> //for hlsl export
 #include "os.h"
-
+#include <include/xshader_api.h>
 
 
 // Original code (mostly) by CXBX team
@@ -439,65 +439,6 @@ typedef struct s_HostPSDef {
 	bool RenderStateSpecularEnable;
 	bool AlphaKill[4]; // Read from XboxTextureStates.Get(stage, xbox::X_D3DTSS_ALPHAKILL);
 
-	bool IsEquivalent(const s_HostPSDef& Another)
-	{
-		// Only compare the [*]-marked members, which forms the unique shader declaration (ignore the constants and most Xbox Direct3D8 run-time fields) :
-		// [*] DWORD    PSAlphaInputs[8];          // X_D3DRS_PSALPHAINPUTS0..X_D3DRS_PSALPHAINPUTS7 : Alpha inputs for each stage
-		// [*] DWORD    PSFinalCombinerInputsABCD; // X_D3DRS_PSFINALCOMBINERINPUTSABCD : Final combiner inputs
-		// [*] DWORD    PSFinalCombinerInputsEFG;  // X_D3DRS_PSFINALCOMBINERINPUTSEFG : Final combiner inputs (continued)
-		if (memcmp(&(PSDef.PSAlphaInputs[0]), &(Another.PSDef.PSAlphaInputs[0]), (8 + 1 + 1) * sizeof(DWORD)) != 0)
-			return false;
-
-		// [-] DWORD    PSConstant0[8];            // X_D3DRS_PSCONSTANT0_0..X_D3DRS_PSCONSTANT0_7 : C0 for each stage
-		// [-] DWORD    PSConstant1[8];            // X_D3DRS_PSCONSTANT1_0..X_D3DRS_PSCONSTANT1_7 : C1 for each stage
-		// [*] DWORD    PSAlphaOutputs[8];         // X_D3DRS_PSALPHAOUTPUTS0..X_D3DRS_PSALPHAOUTPUTS7 : Alpha output for each stage
-		// [*] DWORD    PSRGBInputs[8];            // X_D3DRS_PSRGBINPUTS0..X_D3DRS_PSRGBINPUTS7 : RGB inputs for each stage
-		// [*] DWORD    PSCompareMode;             // X_D3DRS_PSCOMPAREMODE : Compare modes for clipplane texture mode
-		if (memcmp(&(PSDef.PSAlphaOutputs[0]), &(Another.PSDef.PSAlphaOutputs[0]), (8 + 8 + 1) * sizeof(DWORD)) != 0)
-			return false;
-
-		// [-] DWORD    PSFinalCombinerConstant0;  // X_D3DRS_PSFINALCOMBINERCONSTANT0 : C0 in final combiner
-		// [-] DWORD    PSFinalCombinerConstant1;  // X_D3DRS_PSFINALCOMBINERCONSTANT1 : C1 in final combiner
-		// [*] DWORD    PSRGBOutputs[8];           // X_D3DRS_PSRGBOUTPUTS0..X_D3DRS_PSRGBOUTPUTS7 : Stage 0 RGB outputs
-		// [*] DWORD    PSCombinerCount;           // X_D3DRS_PSCOMBINERCOUNT : Active combiner count (Stages 0-7)
-		// [*] DWORD    PSTextureModes;            // X_D3DRS_PS_RESERVED (copied from out-of-range X_D3DRS_PSTEXTUREMODES) : Texture addressing modes
-		// [*] DWORD    PSDotMapping;              // X_D3DRS_PSDOTMAPPING : Input mapping for dot product modes
-		// [*] DWORD    PSInputTexture;            // X_D3DRS_PSINPUTTEXTURE : Texture source for some texture modes
-		if (memcmp(&(PSDef.PSRGBOutputs[0]), &(Another.PSDef.PSRGBOutputs[0]), (8 + 1 + 1 + 1 + 1) * sizeof(DWORD)) != 0)
-			return false;
-
-		// [-] DWORD    PSC0Mapping;               // Mapping of c0 regs to D3D constants
-		// [-] DWORD    PSC1Mapping;               // Mapping of c1 regs to D3D constants
-		// [*] DWORD    PSFinalCombinerConstants;  // Final combiner constant mapping
-		// Note : From PSFinalCombinerConstants, only the PS_GLOBALFLAGS_TEXMODE_ADJUST flag must correspond
-		if (DecodedTexModeAdjust != Another.DecodedTexModeAdjust)
-			return false;
-
-		for (unsigned i = 0; i < X_D3DTS_STAGECOUNT; i++)
-			if (AlphaKill[i] != Another.AlphaKill[i])
-				return false;
-
-		// All ActiveTextureTypes must correspond as well (otherwise the recompiled shader would sample incorrectly) :
-		for (unsigned i = 0; i < X_D3DTS_STAGECOUNT; i++)
-			if (ActiveTextureTypes[i] != Another.ActiveTextureTypes[i])
-				return false;
-
-		// Fail if they don't correspond in their use of the final combiner unit
-		if (DecodedHasFinalCombiner != Another.DecodedHasFinalCombiner)
-			return false;
-
-		// If they don't use the final combiner unit
-		if (!DecodedHasFinalCombiner) {
-			// Fail if they don't correspond on the render states that impact AdjustFinalCombiner
-			if (RenderStateFogEnable != Another.RenderStateFogEnable)
-				return false;
-
-			if (RenderStateSpecularEnable != Another.RenderStateSpecularEnable)
-				return false;
-		}
-
-		return true;
-	}
 
 
 	void AdjustTextureModes(DecodedRegisterCombiner& RC)
@@ -508,7 +449,8 @@ typedef struct s_HostPSDef {
 			for (int i = 0; i < X_D3DTS_STAGECOUNT; i++) 
 			{
 				// First, disable not-assigned textures
-				if (ActiveTextureTypes[i] == X_D3DRTYPE_NONE) {
+				if (ActiveTextureTypes[i] == X_D3DRTYPE_NONE) 
+				{
 					RC.PSTextureModes[i] = PS_TEXTUREMODES_NONE;
 					continue;
 				}
@@ -966,14 +908,22 @@ private:
 	std::mutex mutex_;
 };
 
-const uint8_t* CreateRecompilePixelShader(X_D3DPIXELSHADERDEF* PSDef, size_t* outSize, bool vulkan, bool exportHLSL)
+const uint8_t* CreateRecompilePixelShader(X_D3DPIXELSHADERDEF* PSDef, size_t* outSize, void* psGuestInfo, bool vulkan, bool exportHLSL)
 {
+	pixelShader_GuestInfo* guestInfo = static_cast<pixelShader_GuestInfo*>(psGuestInfo);
 
 	g_ShaderSources.Update();
 
 	HostPSDef CompletePSDef;
 	CompletePSDef.PSDef = *PSDef;
-
+	for (int i = 0; i < 4; i++)
+	{
+		CompletePSDef.AlphaKill[i] = guestInfo->AlphaKill[i];
+		CompletePSDef.ActiveTextureTypes[i] = (X_D3DRESOURCETYPE)guestInfo->ActiveTextureTypes[i];
+	}
+	CompletePSDef.RenderStateFogEnable = guestInfo->renderstateFogEnable;
+	CompletePSDef.RenderStateSpecularEnable = guestInfo->renderStateSpecularEnable;
+	CompletePSDef.PSDef.PSTextureModes = guestInfo->PSTextureModes;
 	DecodedRegisterCombiner RC = {};
 	RC.Decode(&(CompletePSDef.PSDef));
 	CompletePSDef.FinalDecodeAdjustments(RC);
