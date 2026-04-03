@@ -12,7 +12,6 @@ file(GLOB SHADER_TEMPLATES
     ${CMAKE_CURRENT_SOURCE_DIR}/hlsli/*.hlsli
 )
 
-
 set(GENERATED_SHADER_HEADER
     ${CMAKE_CURRENT_BINARY_DIR}/generated_shader_templates.h
 )
