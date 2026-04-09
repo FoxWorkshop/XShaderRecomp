@@ -5,32 +5,32 @@
 #include "shader.h"
 
 
-constexpr unsigned long X_D3DTS_STAGECOUNT = 4; // Dxbx addition
-constexpr unsigned long X_PSH_COMBINECOUNT = 8; // Dxbx addition
+constexpr uint32_t X_D3DTS_STAGECOUNT = 4; // Dxbx addition
+constexpr uint32_t X_PSH_COMBINECOUNT = 8; // Dxbx addition
 
 typedef struct _X_D3DPIXELSHADERDEF	// <- blueshogun 10/1/07
 {
-    unsigned long    PSAlphaInputs[8];          // X_D3DRS_PSALPHAINPUTS0..X_D3DRS_PSALPHAINPUTS7 : Alpha inputs for each stage
-    unsigned long    PSFinalCombinerInputsABCD; // X_D3DRS_PSFINALCOMBINERINPUTSABCD : Final combiner inputs
-    unsigned long    PSFinalCombinerInputsEFG;  // X_D3DRS_PSFINALCOMBINERINPUTSEFG : Final combiner inputs (continued)
-    unsigned long    PSConstant0[8];            // X_D3DRS_PSCONSTANT0_0..X_D3DRS_PSCONSTANT0_7 : C0 for each stage
-    unsigned long    PSConstant1[8];            // X_D3DRS_PSCONSTANT1_0..X_D3DRS_PSCONSTANT1_7 : C1 for each stage
-    unsigned long    PSAlphaOutputs[8];         // X_D3DRS_PSALPHAOUTPUTS0..X_D3DRS_PSALPHAOUTPUTS7 : Alpha output for each stage
-    unsigned long    PSRGBInputs[8];            // X_D3DRS_PSRGBINPUTS0..X_D3DRS_PSRGBINPUTS7 : RGB inputs for each stage
-    unsigned long    PSCompareMode;             // X_D3DRS_PSCOMPAREMODE : Compare modes for clipplane texture mode
-    unsigned long    PSFinalCombinerConstant0;  // X_D3DRS_PSFINALCOMBINERCONSTANT0 : C0 in final combiner
-    unsigned long    PSFinalCombinerConstant1;  // X_D3DRS_PSFINALCOMBINERCONSTANT1 : C1 in final combiner
-    unsigned long    PSRGBOutputs[8];           // X_D3DRS_PSRGBOUTPUTS0..X_D3DRS_PSRGBOUTPUTS7 : Stage 0 RGB outputs
-    unsigned long    PSCombinerCount;           // X_D3DRS_PSCOMBINERCOUNT : Active combiner count (Stages 0-7)
-    unsigned long    PSTextureModes;            // X_D3DRS_PS_RESERVED (copied from out-of-range X_D3DRS_PSTEXTUREMODES) : Texture addressing modes
-    unsigned long    PSDotMapping;              // X_D3DRS_PSDOTMAPPING : Input mapping for dot product modes
-    unsigned long    PSInputTexture;            // X_D3DRS_PSINPUTTEXTURE : Texture source for some texture modes
+    uint32_t    PSAlphaInputs[8];          // X_D3DRS_PSALPHAINPUTS0..X_D3DRS_PSALPHAINPUTS7 : Alpha inputs for each stage
+    uint32_t    PSFinalCombinerInputsABCD; // X_D3DRS_PSFINALCOMBINERINPUTSABCD : Final combiner inputs
+    uint32_t    PSFinalCombinerInputsEFG;  // X_D3DRS_PSFINALCOMBINERINPUTSEFG : Final combiner inputs (continued)
+    uint32_t    PSConstant0[8];            // X_D3DRS_PSCONSTANT0_0..X_D3DRS_PSCONSTANT0_7 : C0 for each stage
+    uint32_t    PSConstant1[8];            // X_D3DRS_PSCONSTANT1_0..X_D3DRS_PSCONSTANT1_7 : C1 for each stage
+    uint32_t    PSAlphaOutputs[8];         // X_D3DRS_PSALPHAOUTPUTS0..X_D3DRS_PSALPHAOUTPUTS7 : Alpha output for each stage
+    uint32_t    PSRGBInputs[8];            // X_D3DRS_PSRGBINPUTS0..X_D3DRS_PSRGBINPUTS7 : RGB inputs for each stage
+    uint32_t    PSCompareMode;             // X_D3DRS_PSCOMPAREMODE : Compare modes for clipplane texture mode
+    uint32_t    PSFinalCombinerConstant0;  // X_D3DRS_PSFINALCOMBINERCONSTANT0 : C0 in final combiner
+    uint32_t    PSFinalCombinerConstant1;  // X_D3DRS_PSFINALCOMBINERCONSTANT1 : C1 in final combiner
+    uint32_t    PSRGBOutputs[8];           // X_D3DRS_PSRGBOUTPUTS0..X_D3DRS_PSRGBOUTPUTS7 : Stage 0 RGB outputs
+    uint32_t    PSCombinerCount;           // X_D3DRS_PSCOMBINERCOUNT : Active combiner count (Stages 0-7)
+    uint32_t    PSTextureModes;            // X_D3DRS_PS_RESERVED (copied from out-of-range X_D3DRS_PSTEXTUREMODES) : Texture addressing modes
+    uint32_t    PSDotMapping;              // X_D3DRS_PSDOTMAPPING : Input mapping for dot product modes
+    uint32_t    PSInputTexture;            // X_D3DRS_PSINPUTTEXTURE : Texture source for some texture modes
 
     // These last three DWORDs are used to define how Direct3D8 pixel shader constants map to the constant
     // registers in each combiner stage. They are used by the Direct3D run-time software but not by the hardware.
-   unsigned long    PSC0Mapping;               // Mapping of c0 regs to D3D constants
-   unsigned long    PSC1Mapping;               // Mapping of c1 regs to D3D constants
-   unsigned long    PSFinalCombinerConstants;  // Final combiner constant mapping
+   uint32_t    PSC0Mapping;               // Mapping of c0 regs to D3D constants
+   uint32_t    PSC1Mapping;               // Mapping of c1 regs to D3D constants
+   uint32_t    PSFinalCombinerConstants;  // Final combiner constant mapping
 }
 X_D3DPIXELSHADERDEF;
 
