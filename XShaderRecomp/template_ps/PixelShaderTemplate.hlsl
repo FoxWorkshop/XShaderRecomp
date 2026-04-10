@@ -60,9 +60,9 @@ struct PushConstants
 #define BEM(i) vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_ARRAY_OFFSET(19, i) )
 #define LUM(i) vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_ARRAY_OFFSET(23, i) )
 
-#define FRONTFACE_FACTOR vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_ARRAY_OFFSET(27, 'x') )
+#define FRONTFACE_FACTOR vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_CBUFFER_OFFSET(27, 'x') )
 #define FOGINFO  vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants + V_CBUFFER_OFFSET(28, 'x') )
-#define FOGENABLE vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_ARRAY_OFFSET(29, 'x') )
+#define FOGENABLE vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_CBUFFER_OFFSET(29, 'x') )
 
 
 
