@@ -21,7 +21,7 @@ struct pixelShader_GuestInfo
 * \param Vulkan: Specify if shader should be compiled with spirv features.
 * \param exportHLSL: if true, the HLSL source code of the shader will be exported to the user data directory (e.g. %APPDATA%/XShaderRecomp/HLSL) for debugging and caching purposes. 
 */
-const uint8_t* XSR_CreateRecompiledVertexShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool Vulkan, bool exportHLSL);
+const uint8_t* XSR_CreateRecompiledVertexShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool Vulkan, bool exportHLSL, uint32_t* pTokens);
 
 /**
 * \brief Attempt to get vertex declaration information for the given vertex shader handle, return a valid pointer if the creation succeeded, otherwise return nullptr.
