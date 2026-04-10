@@ -598,14 +598,22 @@ void CompileVertexShader
 	IDxcBlob** ppHostShader,
 	const int32_t type,
 	bool exportHLSL,
-	bool vulkan)
+	bool vulkan,
+	uint32_t hashKey)
 {
 	assert(pIntermediateShader->Instructions.size() > 0);
 
 	// Combine the shader template with the shader program
 	auto hlsl_stream = std::stringstream();
 
-	std::string common = g_ShaderSources.vertexShaderCommon + "\n\n";
+	std::string common;
+
+	if (hashKey)
+	{
+		common = "// Shader hash: " + std::to_string(hashKey) + "\n\n";
+	}
+
+	common += g_ShaderSources.vertexShaderCommon + "\n\n";
 	std::string hlslHeader = g_ShaderSources.vertexShaderTemplateHlsl[type][0];
 	std::string hlslFooter = g_ShaderSources.vertexShaderTemplateHlsl[type][1];
 
@@ -650,7 +658,7 @@ void CompileVertexShader
 }
 
 
-Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(const VertexShaderType type, IntermediateVertexShader intermediateShader, bool vulkan, bool exportHLSL) {
+Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(const VertexShaderType type, IntermediateVertexShader intermediateShader, bool vulkan, bool exportHLSL, uint32_t hashKey) {
 
 
 	Microsoft::WRL::ComPtr<IDxcBlob> pCompiledShader;
@@ -659,7 +667,8 @@ Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(const VertexShaderType 
 		&intermediateShader,
 		&pCompiledShader,
 		type,
-		exportHLSL, vulkan
+		exportHLSL, vulkan,
+		hashKey
 	);
 
 	return pCompiledShader;
@@ -714,7 +723,7 @@ extern void ParseVshFunction
 	}
 }
 
-const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool Vulkan, bool exportHLSL)
+const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool Vulkan, bool exportHLSL, uint32_t* pToken)
 {
 
 	int32_t type = 0;
@@ -762,14 +771,21 @@ const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DW
 
 	g_ShaderSources.Update();
 
-
-
 	IntermediateVertexShader intermediateShader;
 
 	*pXboxFunctionSize = GetVshFunctionSize(pXboxFunction);
 
 	// Parse into intermediate format
 	ParseVshFunction((DWORD*)pXboxFunction, &intermediateShader);
+
+
+	uint32_t vertexShaderKey = 0;
+
+	if (pToken)
+	{
+		vertexShaderKey = XXH3_64bits((void*)pToken, *pXboxFunctionSize);
+	}
+
 
 	// We're going to create a new shader
 	auto newShader = LazyVertexShader();
@@ -783,7 +799,7 @@ const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DW
 			AsyncCreateVertexShader, (VertexShaderType)type,
 			std::move(intermediateShader),  // Move to avoid copy issues
 			Vulkan,
-			exportHLSL
+			exportHLSL, vertexShaderKey
 		);
 
 		newShader.compiledBlob = compileResult.get();
