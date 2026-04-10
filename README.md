@@ -34,7 +34,7 @@ Both vertex and pixel shader stages use three constant buffers:
 
 * Vertex shader constants: 3488 bytes (3472 bytes with Fixed Function emulation) 
 * Pixel shader constants: 480 bytes
-* Shared constants: Used specifically by Shadow Recompiled
+* Shared constants: Used specifically by Shadow Recompiled, mostly for textures and samplers.
 
 Vertex and pixel shader constants are copied directly from the guest render device, and shaders expect them in little-endian format.
 
@@ -61,7 +61,7 @@ Textures and samplers use a bindless approach. Descriptor indices are stored in 
 
 ## Usage
 
-Once you have the library linked to your recompiled game, you can call the function `CreateShader` from the API when the game expects to use a shader. 
+Once you have the library linked to your recompiled game, you can call the function `XSR_CreateRecompiledVertexShader` or `XSR_CreateRecompiledPixelShader` from the API when the game expects to use a shader. 
 The library will then handle the process of decoding, extracting and converting to HLSL before eventually dynamically build the shader.
 The function takes an output pointer which will store the recompiled shader in. Your recompiled game can then load the shader dynamically.
 
