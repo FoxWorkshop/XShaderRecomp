@@ -843,13 +843,16 @@ void CompilePixelShader
 	DecodedRegisterCombiner* pIntermediateShader,
 	IDxcBlob** ppHostShader,
 	bool exportHLSL,
-	uint32_t hash,
+	size_t hash,
 	bool vulkan = false
 )
 {
 	auto hlsl_stream = std::stringstream();
 	BuildShader(pIntermediateShader, hlsl_stream);
-	std::string hash_str = "// Shader hash: " + std::to_string(hash) + "\n\n";
+
+	std::ostringstream oss;
+	oss << std::hex << hash;
+	std::string hash_str = "// Shader hash: " + oss.str() + "\n\n";
 
 	std::string hlsl_str = hash > 0 ? hash_str + hlsl_stream.str() : hlsl_stream.str();
 
@@ -957,7 +960,7 @@ const uint8_t* CreateRecompilePixelShader(X_D3DPIXELSHADERDEF* PSDef, size_t* ou
 	RC.Decode(&(CompletePSDef.PSDef));
 	CompletePSDef.FinalDecodeAdjustments(RC);
 
-	uint32_t hash = GetPixelShaderKey(&CompletePSDef);
+	uint64_t hash = GetPixelShaderKey(&CompletePSDef);
 	IDxcBlob* pShader = nullptr;
 	CompilePixelShader(&RC, &pShader, exportHLSL, hash, vulkan);
 

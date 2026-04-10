@@ -599,7 +599,7 @@ void CompileVertexShader
 	const int32_t type,
 	bool exportHLSL,
 	bool vulkan,
-	uint32_t hashKey)
+	uint64_t hashKey)
 {
 	assert(pIntermediateShader->Instructions.size() > 0);
 
@@ -610,7 +610,11 @@ void CompileVertexShader
 
 	if (hashKey)
 	{
-		common = "// Shader hash: " + std::to_string(hashKey) + "\n\n";
+		std::ostringstream oss;
+		oss << std::hex << hashKey;
+		std::string hash_str = oss.str();
+
+		common = "// Shader hash: " + hash_str + "\n\n";
 	}
 
 	common += g_ShaderSources.vertexShaderCommon + "\n\n";
@@ -658,7 +662,8 @@ void CompileVertexShader
 }
 
 
-Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(const VertexShaderType type, IntermediateVertexShader intermediateShader, bool vulkan, bool exportHLSL, uint32_t hashKey) {
+Microsoft::WRL::ComPtr<IDxcBlob> AsyncCreateVertexShader(const VertexShaderType type, IntermediateVertexShader intermediateShader, bool vulkan, bool exportHLSL, uint64_t hashKey) 
+{
 
 
 	Microsoft::WRL::ComPtr<IDxcBlob> pCompiledShader;
@@ -779,7 +784,7 @@ const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DW
 	ParseVshFunction((DWORD*)pXboxFunction, &intermediateShader);
 
 
-	uint32_t vertexShaderKey = 0;
+	uint64_t vertexShaderKey = 0;
 
 	if (pXboxFunction)
 	{
