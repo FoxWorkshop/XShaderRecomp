@@ -723,7 +723,7 @@ extern void ParseVshFunction
 	}
 }
 
-const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool Vulkan, bool exportHLSL, uint32_t* pToken)
+const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool Vulkan, bool exportHLSL)
 {
 
 	int32_t type = 0;
@@ -781,9 +781,9 @@ const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DW
 
 	uint32_t vertexShaderKey = 0;
 
-	if (pToken)
+	if (pXboxFunction)
 	{
-		vertexShaderKey = XXH3_64bits((void*)pToken, *pXboxFunctionSize);
+		vertexShaderKey = XXH3_64bits((void*)pXboxFunction, *pXboxFunctionSize);
 	}
 
 

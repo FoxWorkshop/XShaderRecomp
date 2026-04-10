@@ -196,4 +196,4 @@ inline X_D3DVertexShader* VshHandleToXboxVertexShader(size_t Handle) { return (X
 #endif
 
 
-const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool Vulkan, bool exportHLSL, uint32_t* pToken);
+const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DWORD* pXboxFunctionSize, size_t* outSize, bool Vulkan, bool exportHLSL);
