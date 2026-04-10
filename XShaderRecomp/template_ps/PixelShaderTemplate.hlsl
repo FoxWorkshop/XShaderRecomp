@@ -509,7 +509,7 @@ PS_OUTPUT main(const PS_INPUT xIn)
     float4 v; // Texture value (temporary)
 
 	// Determine if this is a front face or backface
-    bool isFrontFace = (FRONTFACE_FACTOR.x >= 0) ? xIn.iFF : !xIn.iFF;
+    bool isFrontFace = (FRONTFACE_FACTOR.x == 0) ? true : ((FRONTFACE_FACTOR.x > 0) ? xIn.iFF : !xIn.iFF);
 	// Initialize variables
     r0 = r1 = black; // Note : r0.a/r1.a will be overwritten by t0.a/t1.a (opaque_black will be retained for PS_TEXTUREMODES_NONE)
 	// Note : VFACE/FrontFace has been unreliable, investigate again if some test-case shows bland colors
