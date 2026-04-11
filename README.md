@@ -74,7 +74,7 @@ Once you have your HLSL files extracted, you can use XShaderRecompTool which can
 In this mode, valid shaders are converted and recompiled into a DXIL/SPIR-V cache, formatted for use with Shadow Recompiled. This cache is then exported as a .cpp file for direct embedding into the executable:
 
 ```
-XShaderRecompTool [input directory path] [output .cpp file path] [header file path]
+XShaderRecompTool [input directory path] [output .cpp file path]
 ```
 
 At runtime, shaders are mapped to their recompiled versions using a 64-bit XXH3 hash lookup. This scanning method is particularly useful for games that store embedded shaders within executables or uncompressed archive formats.
