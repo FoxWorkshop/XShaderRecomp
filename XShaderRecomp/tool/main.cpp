@@ -1,6 +1,10 @@
 #include "pch.h"
 #include <dxc_compiler.h>
 #include "shader_recompiler.h"
+#include <string>      
+#include <iostream>    
+#include <sstream>     
+#include <cassert>
 
 
 static std::unique_ptr<uint8_t[]> readAllBytes(const char* filePath, size_t& fileSize)
@@ -29,6 +33,7 @@ struct RecompiledShader
 	std::vector<uint8_t> spirv;
 	uint32_t specConstantsMask = 0;
 	std::string hlsl;
+	bool isPixelShader = false;
 };
 
 int main(int argc, char** argv)
@@ -46,13 +51,35 @@ int main(int argc, char** argv)
 			continue;
 
 
-		XXH64_hash_t hash = std::stoull(file.path().stem().string(), nullptr, 16);
-
 		size_t fileSize = 0;
 		auto fileData = readAllBytes(file.path().string().c_str(), fileSize);
+		std::string content(reinterpret_cast<const char*>(fileData.get()), fileSize);
+
+		XXH64_hash_t hash = 0;
+		bool isPixelShader = file.path().string().find("PixelShader_") != std::string::npos;
+		bool validHeader = false;
+
+		std::istringstream ss(content);
+		std::string line;
+		while (std::getline(ss, line))
+		{
+			if (line.find("// Shader hash: ") != std::string::npos)
+			{
+				hash = std::stoull(line.substr(16), nullptr, 16);
+				validHeader = true;
+				break;
+			}
+		}
+
+		if (!validHeader)
+		{
+			fmt::println("Skipping {} - no valid header found", file.path().filename().string());
+			continue;
+		}
 
 		auto& shader = shaders[hash];
-		shader.hlsl = std::string(reinterpret_cast<const char*>(fileData.get()), fileSize);
+		shader.hlsl = content;
+		shader.isPixelShader = isPixelShader;
 	}
 
 	std::atomic<uint32_t> progress = 0;
@@ -63,15 +90,13 @@ int main(int argc, char** argv)
 
 			thread_local DxcCompiler dxcCompiler;
 
-			bool isPixelShader = shader.hlsl.find("PS_OUTPUT") != std::string::npos;
-
 #ifdef XSHADER_RECOMP_DXIL
-			shader.dxil = dxcCompiler.compile(shader.hlsl, isPixelShader, false, false);
+			shader.dxil = dxcCompiler.compile(shader.hlsl, shader.isPixelShader, false, false);
 			assert(shader.dxil != nullptr);
 			assert(*(reinterpret_cast<uint32_t*>(shader.dxil->GetBufferPointer()) + 1) != 0 && "DXIL was not signed properly!");
 #endif
 
-			IDxcBlob* spirv = dxcCompiler.compile(shader.hlsl, isPixelShader, false, true);
+			IDxcBlob* spirv = dxcCompiler.compile(shader.hlsl, shader.isPixelShader, false, true);
 			assert(spirv != nullptr);
 
 			bool result = smolv::Encode(spirv->GetBufferPointer(), spirv->GetBufferSize(), shader.spirv, smolv::kEncodeFlagStripDebugInfo);
