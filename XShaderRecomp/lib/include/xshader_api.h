@@ -8,7 +8,7 @@ struct pixelShader_GuestInfo
 	bool renderstateFogEnable;
 	bool renderStateSpecularEnable;
 	bool AlphaKill[4];
-	unsigned long PSTextureModes;
+	uint32_t PSTextureModes;
 };
 
 /**
