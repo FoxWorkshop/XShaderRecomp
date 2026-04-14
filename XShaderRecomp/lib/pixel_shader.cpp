@@ -89,9 +89,9 @@ void RPSRegisterObject::Decode(uint8_t Value)
 	// Validate correctness (see NOTE below)
 #ifndef NDEBUG
 
-	if (Reg == 6) 
+	if (Reg == 6)
 		printf("Unknown PS_REGISTER : 6\n");
-	if (Reg == 7) 
+	if (Reg == 7)
 		printf("Unknown PS_REGISTER : 7\n");
 #endif // NDEBUG
 }
@@ -115,9 +115,9 @@ void RPSInputRegister::Decode(uint8_t Value, unsigned stage_nr, bool isRGB)
 	// Validate correctness (see NOTE below)
 	if (stage_nr <= X_PSH_COMBINECOUNT) {
 		if (Reg == PS_REGISTER_FOG) {
-			if (!isRGB) 
+			if (!isRGB)
 				printf("PS_REGISTER_FOG input not allowed in Alpha register combiner\n");
-			else if (Channel == PS_CHANNEL_ALPHA) 
+			else if (Channel == PS_CHANNEL_ALPHA)
 				printf("PS_REGISTER_FOG.a input not allowed in RGB register combiner\n");
 		}
 		if (Reg == PS_REGISTER_V1R0_SUM) printf("PS_REGISTER_V1R0_SUM input only allowed in final combiner\n");
@@ -174,7 +174,7 @@ void RPSCombinerStageChannel::Decode(uint32_t PSInputs, uint32_t PSOutputs, unsi
 	// Discover test-cases (see TODO below)
 	// Check for 'discard-all-outputs'
 	if (OutputAB.DotProduct || OutputCD.DotProduct) {
-		if ((OutputAB.Reg == PS_REGISTER_DISCARD) && (OutputCD.Reg == PS_REGISTER_DISCARD)) 
+		if ((OutputAB.Reg == PS_REGISTER_DISCARD) && (OutputCD.Reg == PS_REGISTER_DISCARD))
 			printf("All two outputs discarded\n");
 	}
 	else {
@@ -182,32 +182,32 @@ void RPSCombinerStageChannel::Decode(uint32_t PSInputs, uint32_t PSOutputs, unsi
 	}
 
 	// Validate correctness (see NOTE below)
-	if ((PSOutputs & ~0x000FFFFF) > 0) 
+	if ((PSOutputs & ~0x000FFFFF) > 0)
 		printf("Unknown PS_COMBINEROUTPUT flag bits detected\n");
-	if (CombinerOutputMapping == PS_COMBINEROUTPUT_OUTPUTMAPPING_SHIFTLEFT_2_BIAS) 
+	if (CombinerOutputMapping == PS_COMBINEROUTPUT_OUTPUTMAPPING_SHIFTLEFT_2_BIAS)
 		printf("PS_COMBINEROUTPUT_SHIFTLEFT_2_BIAS unsupported on NV2A?\n");
 	if (CombinerOutputMapping == PS_COMBINEROUTPUT_OUTPUTMAPPING_SHIFTRIGHT_1_BIAS)
 		printf("PS_COMBINEROUTPUT_SHIFTRIGHT_1_BIAS unsupported on NV2A?\n");
 	if (isRGB) {
 		if (OutputMUX_SUM.Reg != PS_REGISTER_DISCARD) {
-			if (OutputCD.DotProduct) 
+			if (OutputCD.DotProduct)
 				printf("PS_COMBINEROUTPUT_CD_DOT_PRODUCT detected without PS_REGISTER_DISCARD in MUX_SUM\n");
-			if (OutputAB.DotProduct) 
+			if (OutputAB.DotProduct)
 				printf("PS_COMBINEROUTPUT_AB_DOT_PRODUCT detected without PS_REGISTER_DISCARD in MUX_SUM\n");
 		}
 		if (OutputCD.DotProduct) {
-			if (!OutputAB.DotProduct) 
+			if (!OutputAB.DotProduct)
 				printf("PS_COMBINEROUTPUT_CD_DOT_PRODUCT detected without PS_COMBINEROUTPUT_AB_DOT_PRODUCT (so, xmd 'opcode')\n"); // Need test-cases  Note : Undefined xmd (mul/dot) *is* supported in PixelShaderTemplate.hlsl
 		}
 	}
 	else { // DotProduct and BlueToAlpha are not valid for Alpha
-		if (OutputCD.DotProduct)  
+		if (OutputCD.DotProduct)
 			printf("PS_COMBINEROUTPUT_CD_DOT_PRODUCT shouldn't be set for Alpha\n");
-		if (OutputAB.DotProduct)  
+		if (OutputAB.DotProduct)
 			printf("PS_COMBINEROUTPUT_AB_DOT_PRODUCT shouldn't be set for Alpha\n");
-		if (OutputCD.BlueToAlpha) 
+		if (OutputCD.BlueToAlpha)
 			printf("PS_COMBINEROUTPUT_CD_BLUE_TO_ALPHA shouldn't be set for Alpha\n");
-		if (OutputAB.BlueToAlpha) 
+		if (OutputAB.BlueToAlpha)
 			printf("PS_COMBINEROUTPUT_AB_BLUE_TO_ALPHA shouldn't be set for Alpha\n");
 	}
 }
@@ -232,15 +232,15 @@ void RPSFinalCombiner::Decode(const uint32_t PSFinalCombinerInputsABCD, const ui
 #ifndef NDEBUG
 
 	// if (Input[0].Channel != PS_CHANNEL_ALPHA) LOG_TEST_CASE("PS_CHANNEL_RGB/PS_CHANNEL_BLUE detected on final combiner A input"); // Note : test-case ModifyPixelShader uses PS_REGISTER_FOG.rgb and seems to expect .rgb handling (not PS_CHANNEL_BLUE's .b)
-	if (Input[4].Channel == PS_CHANNEL_ALPHA) 
+	if (Input[4].Channel == PS_CHANNEL_ALPHA)
 		printf("PS_CHANNEL_ALPHA detected on final combiner E input\n"); // Need test-case to determine how this should behave (calculating EF_PROD) : .aaa instead of .rgb?
-	if (Input[5].Channel == PS_CHANNEL_ALPHA) 
+	if (Input[5].Channel == PS_CHANNEL_ALPHA)
 		printf("PS_CHANNEL_ALPHA detected on final combiner F input\n"); // Need test-case to determine how this should behave (calculating EF_PROD) : .aaa instead of .rgb?
 	// if (Input[6].Channel == PS_CHANNEL_BLUE) LOG_TEST_CASE("PS_CHANNEL_ALPHA detected on final combiner G input"); // PS_CHANNEL_BLUE (==0==PS_CHANNEL_RGB) uses G.b
 	// if (Input[6].Channel == PS_CHANNEL_ALPHA) LOG_TEST_CASE("PS_CHANNEL_ALPHA detected on final combiner G input"); // PS_CHANNEL_ALPHA (==1) uses .a  Test-case : XDK samples BumpDemo,BumpEarth,BumpLens,Explosion
 
 	// Validate correctness (see NOTE below)
-	if ((FinalCombinerSettingFlags & ~0xE0) > 0) 
+	if ((FinalCombinerSettingFlags & ~0xE0) > 0)
 		printf("Unknown FinalCombinerSetting bits detected\n");
 #endif
 }
@@ -249,50 +249,50 @@ void RPSFinalCombiner::Decode(const uint32_t PSFinalCombinerInputsABCD, const ui
 
 void DecodedRegisterCombiner::GetPSTextureModes(X_D3DPIXELSHADERDEF* pPSDef, PS_TEXTUREMODES psTextureModes[X_D3DTS_STAGECOUNT])
 {
-	for (int i = 0; i < X_D3DTS_STAGECOUNT; i++) 
+	for (int i = 0; i < X_D3DTS_STAGECOUNT; i++)
 	{
 		psTextureModes[i] = (PS_TEXTUREMODES)((pPSDef->PSTextureModes >> (i * 5)) & PS_TEXTUREMODES_MASK);
 
 #ifndef NDEBUG
-		if (psTextureModes[i] == PS_TEXTUREMODES_PROJECT3D) 
-			printf("PS_TEXTUREMODES_PROJECT3D\n"); 
-		if (psTextureModes[i] == PS_TEXTUREMODES_CUBEMAP) 
-			printf("PS_TEXTUREMODES_CUBEMAP\n");  
-		if (psTextureModes[i] == PS_TEXTUREMODES_PASSTHRU) 
-			printf("PS_TEXTUREMODES_PASSTHRU\n"); 
-		if (psTextureModes[i] == PS_TEXTUREMODES_CLIPPLANE) 
-			printf("PS_TEXTUREMODES_CLIPPLANE\n"); 
-		if (psTextureModes[i] == PS_TEXTUREMODES_BUMPENVMAP_LUM) 
-			printf("PS_TEXTUREMODES_BUMPENVMAP_LUM\n"); 
-		if (psTextureModes[i] == PS_TEXTUREMODES_BRDF) 
+		if (psTextureModes[i] == PS_TEXTUREMODES_PROJECT3D)
+			printf("PS_TEXTUREMODES_PROJECT3D\n");
+		if (psTextureModes[i] == PS_TEXTUREMODES_CUBEMAP)
+			printf("PS_TEXTUREMODES_CUBEMAP\n");
+		if (psTextureModes[i] == PS_TEXTUREMODES_PASSTHRU)
+			printf("PS_TEXTUREMODES_PASSTHRU\n");
+		if (psTextureModes[i] == PS_TEXTUREMODES_CLIPPLANE)
+			printf("PS_TEXTUREMODES_CLIPPLANE\n");
+		if (psTextureModes[i] == PS_TEXTUREMODES_BUMPENVMAP_LUM)
+			printf("PS_TEXTUREMODES_BUMPENVMAP_LUM\n");
+		if (psTextureModes[i] == PS_TEXTUREMODES_BRDF)
 			printf("PS_TEXTUREMODES_BRDF\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_ST) 
+		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_ST)
 			printf("PS_TEXTUREMODES_DOT_ST\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_ZW) 
+		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_ZW)
 			printf("PS_TEXTUREMODES_DOT_ZW\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_DIFF) 
+		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_DIFF)
 			printf("PS_TEXTUREMODES_DOT_RFLCT_DIFF\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_SPEC) 
+		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_SPEC)
 			printf("PS_TEXTUREMODES_DOT_RFLCT_SPEC\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_STR_3D) 
+		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_STR_3D)
 			printf("PS_TEXTUREMODES_DOT_STR_3D\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_STR_CUBE) 
+		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_STR_CUBE)
 			printf("PS_TEXTUREMODES_DOT_STR_CUBE\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DPNDNT_AR) 
+		if (psTextureModes[i] == PS_TEXTUREMODES_DPNDNT_AR)
 			printf("PS_TEXTUREMODES_DPNDNT_AR\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DPNDNT_GB) 
+		if (psTextureModes[i] == PS_TEXTUREMODES_DPNDNT_GB)
 			printf("PS_TEXTUREMODES_DPNDNT_GB\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DOTPRODUCT) 
+		if (psTextureModes[i] == PS_TEXTUREMODES_DOTPRODUCT)
 			printf("PS_TEXTUREMODES_DOTPRODUCT\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST)
 			printf("PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST\n");
 
 		// Validate correctness (see NOTE below)
-		if (psTextureModes[i] == PS_TEXTUREMODES_BUMPENVMAP) if (i < 1) 
+		if (psTextureModes[i] == PS_TEXTUREMODES_BUMPENVMAP) if (i < 1)
 			printf("PS_TEXTUREMODES_BUMPENVMAP only allowed in stage 1, 2 or 3\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_BUMPENVMAP_LUM) if (i < 1) 
+		if (psTextureModes[i] == PS_TEXTUREMODES_BUMPENVMAP_LUM) if (i < 1)
 			printf("PS_TEXTUREMODES_BUMPENVMAP_LUM only allowed in stage 1, 2 or 3\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_BRDF) if (i < 2) 
+		if (psTextureModes[i] == PS_TEXTUREMODES_BRDF) if (i < 2)
 			printf("PS_TEXTUREMODES_BRDF only allowed in stage 2 or 3\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_ST) {
 			if (i < 2) printf("PS_TEXTUREMODES_DOT_ST only allowed in stage 2 or 3\n");
@@ -316,7 +316,7 @@ void DecodedRegisterCombiner::GetPSTextureModes(X_D3DPIXELSHADERDEF* pPSDef, PS_
 	}
 
 	// Validate correctness (see NOTE below)
-	if ((pPSDef->PSTextureModes & ~0x000FFFFF) > 0) 
+	if ((pPSDef->PSTextureModes & ~0x000FFFFF) > 0)
 		printf("Unknown PSTextureModes bits detected\n");
 
 }
@@ -324,7 +324,7 @@ void DecodedRegisterCombiner::GetPSTextureModes(X_D3DPIXELSHADERDEF* pPSDef, PS_
 void DecodedRegisterCombiner::GetPSDotMapping(X_D3DPIXELSHADERDEF* pPSDef, PS_DOTMAPPING psDotMapping[X_D3DTS_STAGECOUNT])
 {
 	psDotMapping[0] = (PS_DOTMAPPING)(0);
-	for (int i = 1; i < X_D3DTS_STAGECOUNT; i++) 
+	for (int i = 1; i < X_D3DTS_STAGECOUNT; i++)
 	{
 		psDotMapping[i] = (PS_DOTMAPPING)((pPSDef->PSDotMapping >> ((i - 1) * 4)) & PS_DOTMAPPING_MASK);
 
@@ -356,7 +356,7 @@ void DecodedRegisterCombiner::GetPSCompareModes(X_D3DPIXELSHADERDEF* pPSDef, boo
 	}
 
 	// Validate correctness (see NOTE below)
-	if ((pPSDef->PSCompareMode & ~0x0000FFFF) > 0) 
+	if ((pPSDef->PSCompareMode & ~0x0000FFFF) > 0)
 		printf("Unknown PSCompareMode bits detected\n");
 }
 
@@ -410,20 +410,20 @@ void DecodedRegisterCombiner::Decode(X_D3DPIXELSHADERDEF* pPSDef)
 
 #ifndef NDEBUG
 	// Discover test-cases 
-	if (NumberOfCombiners == 0) 
+	if (NumberOfCombiners == 0)
 		printf("NumberOfCombiners is zero\n");
 
-	if (!CombinerMuxesOnMsb) 
-		printf("PS_COMBINERCOUNT_MUX_LSB detected\n"); 
+	if (!CombinerMuxesOnMsb)
+		printf("PS_COMBINERCOUNT_MUX_LSB detected\n");
 
-	if (TexModeAdjust) 
+	if (TexModeAdjust)
 		printf("PS_GLOBALFLAGS_TEXMODE_ADJUST detected\n");
 
 	// Validate correctness (see NOTE below)
-	if (NumberOfCombiners > 8) 
+	if (NumberOfCombiners > 8)
 		printf("NumberOfCombiners bigger than maximum (of 8)\n");
 
-	if ((pPSDef->PSCombinerCount & ~0x0001110F) > 0) 
+	if ((pPSDef->PSCombinerCount & ~0x0001110F) > 0)
 		printf("Unknown PSCombinerCount bits detected\n");
 #endif
 }
@@ -447,19 +447,19 @@ typedef struct s_HostPSDef {
 	void AdjustTextureModes(DecodedRegisterCombiner& RC)
 	{
 		// if this flag is set, the texture mode for each texture stage is adjusted as follows:
-		if (RC.TexModeAdjust) 
+		if (RC.TexModeAdjust)
 		{
-			for (int i = 0; i < X_D3DTS_STAGECOUNT; i++) 
+			for (int i = 0; i < X_D3DTS_STAGECOUNT; i++)
 			{
 				// First, disable not-assigned textures
-				if (ActiveTextureTypes[i] == X_D3DRTYPE_NONE) 
+				if (ActiveTextureTypes[i] == X_D3DRTYPE_NONE)
 				{
 					RC.PSTextureModes[i] = PS_TEXTUREMODES_NONE;
 					continue;
 				}
 
 				// Then adjust some texture mode according to the currently active textures, so that the shader will use the appropriate sampling method
-				switch (RC.PSTextureModes[i]) 
+				switch (RC.PSTextureModes[i])
 				{
 				case PS_TEXTUREMODES_PROJECT2D:
 				case PS_TEXTUREMODES_PROJECT3D:
@@ -494,7 +494,7 @@ typedef struct s_HostPSDef {
 					RC.PSTextureModes[i] = PS_TEXTUREMODES_CUBEMAP;
 				}
 
-	
+
 				if (ActiveTextureTypes[i] == X_D3DRTYPE_CUBETEXTURE && RC.PSTextureModes[i] == PS_TEXTUREMODES_DOT_STR_3D) {
 					printf("DOT_STR_3D sampling is used with a cubemap texture - using DOT_STR_CUBE sampling instead\n");
 					RC.PSTextureModes[i] = PS_TEXTUREMODES_DOT_STR_CUBE;
@@ -505,7 +505,7 @@ typedef struct s_HostPSDef {
 
 	void AdjustFinalCombiner(DecodedRegisterCombiner& RC)
 	{
-		if (RC.hasFinalCombiner) 
+		if (RC.hasFinalCombiner)
 			return;
 
 		// Since we're HLE'ing Xbox D3D, mimick how it configures the final combiner when PSDef doesn't :
@@ -729,7 +729,7 @@ void CombinerStageHlsl(std::stringstream& hlsl, RPSCombinerStageChannel& stage, 
 
 void BuildShader(DecodedRegisterCombiner* pShader, std::stringstream& hlsl)
 {
-	
+
 	hlsl << g_ShaderSources.pixelShaderTemplateHlsl[0]; // Start with the HLSL template header
 
 	hlsl << "\n#define ALPHAKILL {"
@@ -1023,7 +1023,7 @@ constexpr int PSH_XBOX_CONSTANT_FOGENABLE = HOST_D3DPS_CONSTREG_FOGINFO + 1; // 
 // This concludes the set of constants that need to be set on host :
 constexpr int PSH_XBOX_CONSTANT_MAX = PSH_XBOX_CONSTANT_FOGENABLE + 1; // = 30
 
-std::string_view GetD3DTOPString(int d3dtop) 
+std::string_view GetD3DTOPString(int d3dtop)
 {
 	static constexpr std::string_view opToString[] = {
 #ifdef ENABLE_FF_ALPHAKILL
@@ -1118,4 +1118,3 @@ std::string GetD3DTASumString(int d3dta, bool allowModifier = true)
 
 	return str;
 }
-

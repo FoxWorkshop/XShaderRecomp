@@ -68,7 +68,12 @@ add_executable(XShaderRecompTool
 )
 
 target_link_libraries(XShaderRecompTool
-    PRIVATE XShaderRecompLib
+    PRIVATE
+        XShaderRecompLib
+        Microsoft::DirectXShaderCompiler
+        xxHash::xxhash
+        libzstd_static
+        fmt::fmt
 )
 
 
@@ -83,7 +88,7 @@ target_include_directories(XShaderRecompLib
 )
 
 target_precompile_headers(XShaderRecompLib PRIVATE lib/pch.h)
-
+target_precompile_headers(XShaderRecompTool REUSE_FROM XShaderRecompLib)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(XShaderRecompLib PRIVATE -Wno-switch -Wno-unused-variable -Wno-null-arithmetic -fms-extensions)
@@ -109,4 +114,6 @@ endif()
 if (XSHADER_RECOMP_DXIL)
     target_compile_definitions(XShaderRecompLib PRIVATE XSHADER_RECOMP_DXIL)
     target_link_libraries(XShaderRecompLib PRIVATE Microsoft::DXIL)
+    target_link_libraries(XShaderRecompTool PRIVATE Microsoft::DXIL)
+    target_compile_definitions(XShaderRecompTool PRIVATE XSHADER_RECOMP_DXIL)
 endif()

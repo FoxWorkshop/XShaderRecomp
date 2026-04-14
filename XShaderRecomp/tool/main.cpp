@@ -1,221 +1,180 @@
-
-#include "shader.h"
-
-#include <memory>
+#include "pch.h"
+#include <dxc_compiler.h>
+#include "shader_recompiler.h"
+#include <string>      
+#include <iostream>    
+#include <sstream>     
+#include <cassert>
 
 
 static std::unique_ptr<uint8_t[]> readAllBytes(const char* filePath, size_t& fileSize)
 {
-    FILE* file = fopen(filePath, "rb");
-    fseek(file, 0, SEEK_END);
-    fileSize = ftell(file);
-    fseek(file, 0, SEEK_SET);
-    auto data = std::make_unique<uint8_t[]>(fileSize);
-    fread(data.get(), 1, fileSize, file);
-    fclose(file);
-    return data;
+	FILE* file = fopen(filePath, "rb");
+	fseek(file, 0, SEEK_END);
+	fileSize = ftell(file);
+	fseek(file, 0, SEEK_SET);
+	auto data = std::make_unique<uint8_t[]>(fileSize);
+	fread(data.get(), 1, fileSize, file);
+	fclose(file);
+	return data;
 }
 
 static void writeAllBytes(const char* filePath, const void* data, size_t dataSize)
 {
-    FILE* file = fopen(filePath, "wb");
-    fwrite(data, 1, dataSize, file);
-    fclose(file);
+	FILE* file = fopen(filePath, "wb");
+	fwrite(data, 1, dataSize, file);
+	fclose(file);
 }
 
-/**struct RecompiledShader
+struct RecompiledShader
 {
-    uint8_t* data = nullptr;
-    IDxcBlob* dxil = nullptr;
-    std::vector<uint8_t> spirv;
-    uint32_t specConstantsMask = 0;
-};*/
+	uint8_t* data = nullptr;
+	IDxcBlob* dxil = nullptr;
+	std::vector<uint8_t> spirv;
+	uint32_t specConstantsMask = 0;
+	std::string hlsl;
+	bool isPixelShader = false;
+};
 
 int main(int argc, char** argv)
 {
-#ifndef XSHADER_RECOMP_INPUT
-    if (argc < 4)
-    {
-        printf("Usage: XShaderRecomp [input path] [output path] [shader common header file path]");
-        return 0;
-    }
-#endif
 
-    const char* input =
-#ifdef XSHADER_RECOMP_INPUT 
-        XSHADER_RECOMP_INPUT
-#else
-        argv[1]
-#endif
-    ;
+	const char* inputDir = argv[1];
+	const char* output = argv[2];
 
-    const char* output =
-#ifdef XSHADER_RECOMP_OUTPUT 
-        XSHADER_RECOMP_OUTPUT
-#else
-        argv[2]
-#endif
-        ;
-    
-    const char* includeInput =
-#ifdef XSHADER_RECOMP_INCLUDE_INPUT
-        XSHADER_RECOMP_INCLUDE_INPUT
-#else
-        argv[3]
-#endif
-        ;
+	std::map<XXH64_hash_t, RecompiledShader> shaders;
 
-   /** size_t includeSize = 0;
-    auto includeData = readAllBytes(includeInput, includeSize);
-    std::string_view include(reinterpret_cast<const char*>(includeData.get()), includeSize);
+	// First we collect all HLSL files from input directory
+	for (auto& file : std::filesystem::recursive_directory_iterator(inputDir))
+	{
+		if (file.path().extension() != ".hlsl")
+			continue;
 
-    if (std::filesystem::is_directory(input))
-    {
-        std::vector<std::unique_ptr<uint8_t[]>> files;
-        std::map<XXH64_hash_t, RecompiledShader> shaders;
 
-        for (auto& file : std::filesystem::recursive_directory_iterator(input))
-        {
-            if (std::filesystem::is_directory(file))
-            {
-                continue;
-            }
-            
-            size_t fileSize = 0;
-            auto fileData = readAllBytes(file.path().string().c_str(), fileSize);
-            bool foundAny = false;
+		size_t fileSize = 0;
+		auto fileData = readAllBytes(file.path().string().c_str(), fileSize);
+		std::string content(reinterpret_cast<const char*>(fileData.get()), fileSize);
 
-            for (size_t i = 0; fileSize > sizeof(ShaderContainer) && i < fileSize - sizeof(ShaderContainer) - 1;)
-            {
-                auto shaderContainer = reinterpret_cast<const ShaderContainer*>(fileData.get() + i);
-                size_t dataSize = shaderContainer->virtualSize + shaderContainer->physicalSize;
+		XXH64_hash_t hash = 0;
+		bool isPixelShader = file.path().string().find("PixelShader_") != std::string::npos;
+		bool validHeader = false;
 
-                if ((shaderContainer->flags & 0xFFFFFF00) == 0x102A1100 &&
-                    dataSize <= (fileSize - i) &&
-                    shaderContainer->field1C == 0 &&
-                    shaderContainer->field20 == 0)
-                {
-                    XXH64_hash_t hash = XXH3_64bits(shaderContainer, dataSize);
-                    auto shader = shaders.try_emplace(hash);
-                    if (shader.second)
-                    {
-                        shader.first->second.data = fileData.get() + i;
-                        foundAny = true;
-                    }
+		std::istringstream ss(content);
+		std::string line;
+		while (std::getline(ss, line))
+		{
+			if (line.find("// Shader hash: ") != std::string::npos)
+			{
+				hash = std::stoull(line.substr(16), nullptr, 16);
+				validHeader = true;
+				break;
+			}
+		}
 
-                    i += dataSize;
-                }
-                else
-                {
-                    i += sizeof(uint32_t);
-                }
-            }
+		if (!validHeader)
+		{
+			fmt::println("Skipping {} - no valid header found", file.path().filename().string());
+			continue;
+		}
 
-            if (foundAny)
-                files.emplace_back(std::move(fileData));
-        }
+		auto& shader = shaders[hash];
+		shader.hlsl = content;
+		shader.isPixelShader = isPixelShader;
+	}
 
-        std::atomic<uint32_t> progress = 0;
+	std::atomic<uint32_t> progress = 0;
 
-        std::for_each(std::execution::par_unseq, shaders.begin(), shaders.end(), [&](auto& hashShaderPair)
-            {
-                auto& shader = hashShaderPair.second;
+	std::for_each(std::execution::par_unseq, shaders.begin(), shaders.end(), [&](auto& hashShaderPair)
+		{
+			auto& shader = hashShaderPair.second;
 
-                thread_local ShaderRecompiler recompiler;
-                recompiler = {};
-                recompiler.recompile(shader.data, include);
-
-                shader.specConstantsMask = recompiler.specConstantsMask;
-
-                thread_local DxcCompiler dxcCompiler;
+			thread_local DxcCompiler dxcCompiler;
 
 #ifdef XSHADER_RECOMP_DXIL
-                shader.dxil = dxcCompiler.compile(recompiler.out, recompiler.isPixelShader, recompiler.specConstantsMask != 0, false);
-                assert(shader.dxil != nullptr);
-                assert(*(reinterpret_cast<uint32_t *>(shader.dxil->GetBufferPointer()) + 1) != 0 && "DXIL was not signed properly!");
+			shader.dxil = dxcCompiler.compile(shader.hlsl, shader.isPixelShader, false, false);
+			assert(shader.dxil != nullptr);
+			assert(*(reinterpret_cast<uint32_t*>(shader.dxil->GetBufferPointer()) + 1) != 0 && "DXIL was not signed properly!");
 #endif
 
-                IDxcBlob* spirv = dxcCompiler.compile(recompiler.out, recompiler.isPixelShader, false, true);
-                assert(spirv != nullptr);
+			IDxcBlob* spirv = dxcCompiler.compile(shader.hlsl, shader.isPixelShader, false, true);
+			assert(spirv != nullptr);
 
-                bool result = smolv::Encode(spirv->GetBufferPointer(), spirv->GetBufferSize(), shader.spirv, smolv::kEncodeFlagStripDebugInfo);
-                assert(result);
+			bool result = smolv::Encode(spirv->GetBufferPointer(), spirv->GetBufferSize(), shader.spirv, smolv::kEncodeFlagStripDebugInfo);
+			assert(result);
 
-                spirv->Release();
+			spirv->Release();
 
-                size_t currentProgress = ++progress;
-                if ((currentProgress % 10) == 0 || (currentProgress == shaders.size() - 1))
-                    fmt::println("Recompiling shaders... {}%", currentProgress / float(shaders.size()) * 100.0f);
-            });
+			size_t currentProgress = ++progress;
+			if ((currentProgress % 10) == 0 || currentProgress == shaders.size())
+				fmt::println("Compiling shaders... {:.1f}%", currentProgress / float(shaders.size()) * 100.0f);
+		});
 
-        fmt::println("Creating shader cache...");
 
-        StringBuffer f;
-        f.println("#include \"shader_cache.h\"");
-        f.println("ShaderCacheEntry g_shaderCacheEntries[] = {{");
+	fmt::println("Creating shader cache...");
 
-        std::vector<uint8_t> dxil;
-        std::vector<uint8_t> spirv;
+	StringBuffer f;
+	f.println("#include \"shader_cache.h\"");
+	f.println("ShaderCacheEntry g_shaderCacheEntries[] = {{");
 
-        for (auto& [hash, shader] : shaders)
-        {
-            f.println("\t{{ 0x{:X}, {}, {}, {}, {}, {} }},",
-                hash, dxil.size(), (shader.dxil != nullptr) ? shader.dxil->GetBufferSize() : 0, spirv.size(), shader.spirv.size(), shader.specConstantsMask);
+	std::vector<uint8_t> dxil;
+	std::vector<uint8_t> spirv;
 
-            if (shader.dxil != nullptr)
-            {
-                dxil.insert(dxil.end(), reinterpret_cast<uint8_t *>(shader.dxil->GetBufferPointer()),
-                    reinterpret_cast<uint8_t *>(shader.dxil->GetBufferPointer()) + shader.dxil->GetBufferSize());
-            }
-            
-            spirv.insert(spirv.end(), shader.spirv.begin(), shader.spirv.end());
-        }
+	for (auto& [hash, shader] : shaders)
+	{
+		f.println("\t{{ 0x{:X}, {}, {}, {}, {}, {} }},",
+			hash,
+			dxil.size(), (shader.dxil != nullptr) ? shader.dxil->GetBufferSize() : 0,
+			spirv.size(), shader.spirv.size(),
+			shader.specConstantsMask);
 
-        f.println("}};");
+		if (shader.dxil != nullptr)
+		{
+			dxil.insert(dxil.end(),
+				reinterpret_cast<uint8_t*>(shader.dxil->GetBufferPointer()),
+				reinterpret_cast<uint8_t*>(shader.dxil->GetBufferPointer()) + shader.dxil->GetBufferSize());
+		}
 
-        fmt::println("Compressing DXIL cache...");
+		spirv.insert(spirv.end(), shader.spirv.begin(), shader.spirv.end());
+	}
 
-        int level = ZSTD_maxCLevel();
+	f.println("}};");
+
+	fmt::println("Compressing DXIL cache...");
+
+	int level = ZSTD_maxCLevel();
 
 #ifdef XSHADER_RECOMP_DXIL
-        std::vector<uint8_t> dxilCompressed(ZSTD_compressBound(dxil.size()));
-        dxilCompressed.resize(ZSTD_compress(dxilCompressed.data(), dxilCompressed.size(), dxil.data(), dxil.size(), level));
+	std::vector<uint8_t> dxilCompressed(ZSTD_compressBound(dxil.size()));
+	dxilCompressed.resize(ZSTD_compress(dxilCompressed.data(), dxilCompressed.size(), dxil.data(), dxil.size(), level));
 
-        f.print("const uint8_t g_compressedDxilCache[] = {{");
+	f.print("const uint8_t g_compressedDxilCache[] = {{");
 
-        for (auto data : dxilCompressed)
-            f.print("{},", data);
+	for (auto data : dxilCompressed)
+		f.print("{},", data);
 
-        f.println("}};");
-        f.println("const size_t g_dxilCacheCompressedSize = {};", dxilCompressed.size());
-        f.println("const size_t g_dxilCacheDecompressedSize = {};", dxil.size());
+	f.println("}};");
+	f.println("const size_t g_dxilCacheCompressedSize = {};", dxilCompressed.size());
+	f.println("const size_t g_dxilCacheDecompressedSize = {};", dxil.size());
 #endif
 
-        fmt::println("Compressing SPIRV cache...");
+	fmt::println("Compressing SPIRV cache...");
 
-        std::vector<uint8_t> spirvCompressed(ZSTD_compressBound(spirv.size()));
-        spirvCompressed.resize(ZSTD_compress(spirvCompressed.data(), spirvCompressed.size(), spirv.data(), spirv.size(), level));
+	std::vector<uint8_t> spirvCompressed(ZSTD_compressBound(spirv.size()));
+	spirvCompressed.resize(ZSTD_compress(spirvCompressed.data(), spirvCompressed.size(), spirv.data(), spirv.size(), level));
 
-        f.print("const uint8_t g_compressedSpirvCache[] = {{");
+	f.print("const uint8_t g_compressedSpirvCache[] = {{");
 
-        for (auto data : spirvCompressed)
-            f.print("{},", data);
+	for (auto data : spirvCompressed)
+		f.print("{},", data);
 
-        f.println("}};");
+	f.println("}};");
 
-        f.println("const size_t g_spirvCacheCompressedSize = {};", spirvCompressed.size());
-        f.println("const size_t g_spirvCacheDecompressedSize = {};", spirv.size());
-        f.println("const size_t g_shaderCacheEntryCount = {};", shaders.size());
+	f.println("const size_t g_spirvCacheCompressedSize = {};", spirvCompressed.size());
+	f.println("const size_t g_spirvCacheDecompressedSize = {};", spirv.size());
+	f.println("const size_t g_shaderCacheEntryCount = {};", shaders.size());
 
-        writeAllBytes(output, f.out.data(), f.out.size());
-    }
-    else
-    {
-        ShaderRecompiler recompiler;
-        size_t fileSize;
-        recompiler.recompile(readAllBytes(input, fileSize).get(), include);
-        writeAllBytes(output, recompiler.out.data(), recompiler.out.size());
-    }*/
+	writeAllBytes(output, f.out.data(), f.out.size());
 
-    return 0;
+
+	return 0;
 }
