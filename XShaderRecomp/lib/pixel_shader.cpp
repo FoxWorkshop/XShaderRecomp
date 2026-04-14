@@ -942,20 +942,7 @@ uint64_t GetPixelShaderKey(HostPSDef* pHostPSDef)
 	X_D3DPIXELSHADERDEF defForHash = *pPSDef;
 	memset(defForHash.PSConstant0, 0, sizeof(defForHash.PSConstant0));
 	memset(defForHash.PSConstant1, 0, sizeof(defForHash.PSConstant1));
-	defForHash.PSC0Mapping = 0;
-	defForHash.PSC1Mapping = 0;
-	defForHash.PSFinalCombinerConstants = 0;
-
-	PixelShaderKey psKey;
-	psKey.PSDef = defForHash;
-	psKey.fogEnable = pHostPSDef->RenderStateFogEnable;
-	psKey.specularEnable = pHostPSDef->RenderStateSpecularEnable;
-	psKey.PSTextureModes = pHostPSDef->PSDef.PSTextureModes;
-
-	for (int i = 0; i < 4; i++)
-		psKey.AlphaKill[i] = (uint8_t)pHostPSDef->AlphaKill[i];
-
-	uint64_t PixelShaderKey = XXH3_64bits(&psKey, sizeof(psKey));
+	uint64_t PixelShaderKey = XXH3_64bits(&defForHash, sizeof(X_D3DPIXELSHADERDEF) - 3 * sizeof(DWORD));
 	return PixelShaderKey;
 }
 
@@ -1118,3 +1105,4 @@ std::string GetD3DTASumString(int d3dta, bool allowModifier = true)
 
 	return str;
 }
+
