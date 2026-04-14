@@ -602,6 +602,7 @@ void CompileVertexShader
 {
 	assert(pIntermediateShader->Instructions.size() > 0);
 
+	printf("[XSHR] Compiling Vertex Shader with hash 0x%016llx\n", hashKey);
 	// Combine the shader template with the shader program
 	auto hlsl_stream = std::stringstream();
 
@@ -646,7 +647,14 @@ void CompileVertexShader
 
 	std::string s = template_vs[type] + ".hlsl";
 	const char* notionalSourceName = s.c_str();
-	CompileShader(hlsl_final, vs_model_, ppHostShader, notionalSourceName, vulkan);
+	auto res = CompileShader(hlsl_final, vs_model_, ppHostShader, notionalSourceName, vulkan);
+	if (FAILED(res)) {
+		printf("[XSHR] Failed to compile vertex shader with hash 0x%016llx\n", hashKey);
+	}
+	else
+	{
+		printf("[XSHR] Successfully compiled vertex shader with hash 0x%016llx\n", hashKey);
+	}
 }
 
 

@@ -843,12 +843,19 @@ void CompilePixelShader
 	DecodedRegisterCombiner* pIntermediateShader,
 	IDxcBlob** ppHostShader,
 	bool exportHLSL,
+	size_t hash,
 	bool vulkan = false
 )
 {
+	printf("[XSHR] Compiling Pixel Shader with hash 0x%016llx\n", hash);
 	auto hlsl_stream = std::stringstream();
 	BuildShader(pIntermediateShader, hlsl_stream);
-	std::string hlsl_str = hlsl_stream.str();
+
+	std::ostringstream oss;
+	oss << std::hex << hash;
+	std::string hash_str = "// Shader hash: " + oss.str() + "\n\n";
+
+	std::string hlsl_str = hash > 0 ? hash_str + hlsl_stream.str() : hlsl_stream.str();
 
 
 	if (exportHLSL)
@@ -877,7 +884,13 @@ void CompilePixelShader
 		}
 	}
 
-	CompileShader(hlsl_str, ps_model_, ppHostShader, template_ps.c_str(), vulkan);
+	auto psRes = CompileShader(hlsl_str, ps_model_, ppHostShader, template_ps.c_str(), vulkan);
+	if (FAILED(psRes)) {
+		printf("[XSHR] Failed to compile pixel shader with hash 0x%016llx\n", hash);
+	}
+	else {
+		printf("[XSHR] Successfully compiled pixel shader with hash 0x%016llx\n", hash);
+	}
 }
 
 struct LazyPixelShader {
@@ -911,6 +924,41 @@ private:
 	std::mutex mutex_;
 };
 
+struct PixelShaderKey
+{
+	X_D3DPIXELSHADERDEF PSDef;
+	uint8_t fogEnable;
+	uint8_t specularEnable;
+	uint8_t AlphaKill[4];
+	uint32_t PSTextureModes;
+};
+
+uint64_t GetPixelShaderKey(HostPSDef* pHostPSDef)
+{
+	if (!pHostPSDef)
+		return 0;
+
+	X_D3DPIXELSHADERDEF* pPSDef = (X_D3DPIXELSHADERDEF*)&pHostPSDef->PSDef;
+	X_D3DPIXELSHADERDEF defForHash = *pPSDef;
+	memset(defForHash.PSConstant0, 0, sizeof(defForHash.PSConstant0));
+	memset(defForHash.PSConstant1, 0, sizeof(defForHash.PSConstant1));
+	defForHash.PSC0Mapping = 0;
+	defForHash.PSC1Mapping = 0;
+	defForHash.PSFinalCombinerConstants = 0;
+
+	PixelShaderKey psKey;
+	psKey.PSDef = defForHash;
+	psKey.fogEnable = pHostPSDef->RenderStateFogEnable;
+	psKey.specularEnable = pHostPSDef->RenderStateSpecularEnable;
+	psKey.PSTextureModes = pHostPSDef->PSDef.PSTextureModes;
+
+	for (int i = 0; i < 4; i++)
+		psKey.AlphaKill[i] = (uint8_t)pHostPSDef->AlphaKill[i];
+
+	uint64_t PixelShaderKey = XXH3_64bits(&psKey, sizeof(psKey));
+	return PixelShaderKey;
+}
+
 const uint8_t* CreateRecompilePixelShader(X_D3DPIXELSHADERDEF* PSDef, size_t* outSize, void* psGuestInfo, bool vulkan, bool exportHLSL)
 {
 	pixelShader_GuestInfo* guestInfo = static_cast<pixelShader_GuestInfo*>(psGuestInfo);
@@ -932,9 +980,9 @@ const uint8_t* CreateRecompilePixelShader(X_D3DPIXELSHADERDEF* PSDef, size_t* ou
 	RC.Decode(&(CompletePSDef.PSDef));
 	CompletePSDef.FinalDecodeAdjustments(RC);
 
-
+	uint64_t hash = GetPixelShaderKey(&CompletePSDef);
 	IDxcBlob* pShader = nullptr;
-	CompilePixelShader(&RC, &pShader, exportHLSL, vulkan);
+	CompilePixelShader(&RC, &pShader, exportHLSL, hash, vulkan);
 
 	auto newShader = LazyPixelShader();
 	newShader.referenceCount = 1;
