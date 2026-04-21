@@ -1,5 +1,6 @@
 #include "pch.h"
 #include <sstream> // std::stringstream
+#include <mutex>
 #include "shader.h"
 #include "pixel_shader.h"
 #include <fstream> //for hlsl export
