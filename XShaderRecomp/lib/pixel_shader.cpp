@@ -867,11 +867,11 @@ void CompilePixelShader
 
 		if (std::filesystem::exists(shaderFolder))
 		{
-			std::string shaderName = shaderFolder + "/PixelShader_#ID_" + std::to_string(rand() % INT16_MAX) + ".hlsl";
+			std::string shaderName = shaderFolder + "/PixelShader_#ID_" + hash_str.substr(0, 8) + ".hlsl";
 			int failsafe = 0;
 			while (std::filesystem::exists(shaderName))
 			{
-				shaderName = shaderFolder + "/PixelShader_#ID_" + std::to_string(rand() % INT16_MAX) + ".hlsl";
+				shaderName = shaderFolder + "/PixelShader_#ID_RNG_" + std::to_string(rand() % INT16_MAX) + ".hlsl";
 
 				if (++failsafe >= 1000)
 				{

@@ -603,20 +603,19 @@ void CompileVertexShader
 {
 	assert(pIntermediateShader->Instructions.size() > 0);
 
-	printf("[XSHR] Compiling Vertex Shader with hash 0x%016llx\n", hashKey);
+
 	// Combine the shader template with the shader program
 	auto hlsl_stream = std::stringstream();
 
 	std::string common;
 
-	if (hashKey)
-	{
-		std::ostringstream oss;
-		oss << std::hex << hashKey;
-		std::string hash_str = oss.str();
 
-		common = "// Shader hash: " + hash_str + "\n\n";
-	}
+	printf("[XSHR] Compiling Vertex Shader with hash 0x%016llx\n", hashKey);
+	std::ostringstream oss;
+	oss << std::hex << hashKey;
+	std::string hash_str = oss.str();
+
+	common = "// Shader hash: " + hash_str + "\n\n";
 
 	common += g_ShaderSources.vertexShaderCommon + "\n\n";
 	std::string hlslHeader = g_ShaderSources.vertexShaderTemplateHlsl[type][0];
@@ -639,11 +638,11 @@ void CompileVertexShader
 
 		if (std::filesystem::exists(shaderFolder))
 		{
-			std::string shaderName = shaderFolder + "/VertexShader_#ID_" + std::to_string(rand() % INT16_MAX) + ".hlsl";
+			std::string shaderName = shaderFolder + "/VertexShader_#ID_" + hash_str.substr(0, 8) + ".hlsl";
 			int failsafe = 0;
 			while (std::filesystem::exists(shaderName))
 			{
-				shaderName = shaderFolder + "/VertexShader_#ID_" + std::to_string(rand() % INT16_MAX) + ".hlsl";
+				shaderName = shaderFolder + "/VertexShader_#ID_RNG_" + std::to_string(rand() % INT16_MAX) + ".hlsl";
 
 				if (++failsafe >= 1000)
 				{
