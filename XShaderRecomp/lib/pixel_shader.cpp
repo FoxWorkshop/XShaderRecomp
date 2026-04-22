@@ -867,7 +867,7 @@ void CompilePixelShader
 
 		if (std::filesystem::exists(shaderFolder))
 		{
-			std::string shaderName = shaderFolder + "/PixelShader_#ID_" + hash_str.substr(0, 8) + ".hlsl";
+			std::string shaderName = shaderFolder + "/PixelShader_#ID_" + oss.str().substr(0, 8) + ".hlsl";
 			int failsafe = 0;
 			while (std::filesystem::exists(shaderName))
 			{
