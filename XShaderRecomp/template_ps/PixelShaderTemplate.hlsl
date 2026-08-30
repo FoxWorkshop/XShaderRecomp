@@ -43,7 +43,10 @@ struct PushConstants
 
 #define texture3D_0   vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(4, 'x') )
 
-#define textureCube_0   vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(8, 'x') )
+#define textureCube_0 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(8, 'x') )
+
+// two stages per register: stage i is at element (i >> 1), .xy for even, .zw for odd.
+#define texCoordMin_(i) vk::RawBufferLoad<float4>(g_PushConstants.SharedConstants + V_ARRAY_OFFSET(89, i) )
 
 #define sampler_0  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(12, 'x') )
 #define sampler_1  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(12, 'y') )
@@ -113,9 +116,12 @@ cbuffer SharedConstants : register(b2, space4)
     uint sampler_1 : packoffset(c12.y);
     uint sampler_2 : packoffset(c12.z);
     uint sampler_3 : packoffset(c12.w);
+    
+    float4 texCoordMin__[8] : packoffset(c89);
 
 };
 
+#define texCoordMin_(i) texCoordMin__[i]
 #define c0_(i) c0__[i]
 #define c1_(i) c1__[i]
 
@@ -343,10 +349,27 @@ float4 PostProcessTexel(const int ts, float4 t)
     return t;
 }
 
+// Edge bleed fix
+// Smallest texture coordinate that is safe to sample for this stage
+// Those are not null only for RT that have the RT edge bleed (garbage data top left)
+// see texCoordMin in SharedConstants struct on the CPU side
+
+float2 GetTexCoordMin(uint slot)
+{
+    float4 packed = texCoordMin_(slot >> 1);
+    return (slot & 1) ? packed.zw : packed.xy;
+}
+
 // Actual texture sampling per texture stage (ts), using the sampling vector (s) as input,
 // abstracting away the specifics of accessing above sampler declarations (usefull for future Direct3D 10+ sampler arrays)
 float4 Sample2D(int ts, float3 s)
 {
+    // Edge bleed fix: Make sure to not read the unwritten border of upscaled render target
+    // We guard regular tex, if they get a zero bound, we can keep their negative coordinate and thus their wrap addressing.
+    const float2 texCoordMin = GetTexCoordMin(ts);
+    if (texCoordMin.x > 0.0f)
+        s.x = max(s.xy, texCoordMin);
+        
     float4 result = g_Texture2DDescriptorHeap[GetTextureStage(ts, 1)].Sample(g_SamplerDescriptorHeap[GetSamplerState(ts)], s.xy); // Ignores s.z (and whatever it's set to, will be optimized away by the compiler, see [1] below)
     return PostProcessTexel(ts, result);
 }
