@@ -368,7 +368,7 @@ float4 Sample2D(int ts, float3 s)
     // We guard regular tex, if they get a zero bound, we can keep their negative coordinate and thus their wrap addressing.
     const float2 texCoordMin = GetTexCoordMin(ts);
     if (texCoordMin.x > 0.0f)
-        s.x = max(s.xy, texCoordMin);
+        s.xy = max(s.xy, texCoordMin);
         
     float4 result = g_Texture2DDescriptorHeap[GetTextureStage(ts, 1)].Sample(g_SamplerDescriptorHeap[GetSamplerState(ts)], s.xy); // Ignores s.z (and whatever it's set to, will be optimized away by the compiler, see [1] below)
     return PostProcessTexel(ts, result);
