@@ -1014,11 +1014,7 @@ constexpr int PSH_XBOX_CONSTANT_MAX = PSH_XBOX_CONSTANT_FOGENABLE + 1; // = 30
 std::string_view GetD3DTOPString(int d3dtop)
 {
 	static constexpr std::string_view opToString[] = {
-#ifdef ENABLE_FF_ALPHAKILL
-		"X_D3DTOP_DISABLE", // 0 (Was UNDEFINED, but that doesn't compile)
-#else
 		"UNDEFINED", // 0
-#endif
 		"X_D3DTOP_DISABLE", // 1
 		"X_D3DTOP_SELECTARG1", // 2
 		"X_D3DTOP_SELECTARG2", // 3
@@ -1047,11 +1043,7 @@ std::string_view GetD3DTOPString(int d3dtop)
 		"X_D3DTOP_BUMPENVMAPLUMINANCE", // 26
 	};
 
-#ifdef ENABLE_FF_ALPHAKILL
-	if (d3dtop < 0 || d3dtop > 26) {
-#else
 	if (d3dtop < 1 || d3dtop > 26) {
-#endif
 		XSHR_LOG("Unmapped texture operation %d\n", d3dtop);
 		d3dtop = 0; // undefined
 	}
