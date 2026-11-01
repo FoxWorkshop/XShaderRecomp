@@ -32,7 +32,7 @@ endfunction()
 # - DEPENDS: sources the shader includes
 # - ARGS: extra dxc flags for SPIR-V, e.g. -fvk-invert-y
 function(xsr_compile_fixed_function_shader)
-    cmake_parse_arguments(ARG "" "TARGET;SOURCE;OUTPUT_DIR;PROFILE;DXC;DXIL" "DEPENDS;ARGS" ${ARGN})
+    cmake_parse_arguments(ARG "" "TARGET;SOURCE;OUTPUT_DIR;PROFILE;DXIL" "DXC;DEPENDS;ARGS" ${ARGN})
 
     cmake_path(GET ARG_SOURCE FILENAME FILE_NAME)
     cmake_path(GET ARG_SOURCE STEM VARIABLE_NAME)
@@ -85,8 +85,8 @@ endfunction()
 # - a pinned output file is missing or no longer matches its pinned hash
 # - the wrapper files on disk do not match *_VARIANTS
 function(xsr_define_fixed_function_variants)
-    cmake_parse_arguments(ARG "" "FAMILY_NAME;FAMILY_SUBDIR;GENERATED_DIR;DXIL_MACRO;TARGET;PROFILE;DXC;DXIL"
-        "STATES;SHARED_DEPENDENCIES;ARGS" ${ARGN})
+    cmake_parse_arguments(ARG "" "FAMILY_NAME;FAMILY_SUBDIR;GENERATED_DIR;DXIL_MACRO;TARGET;PROFILE;DXIL"
+        "DXC;STATES;SHARED_DEPENDENCIES;ARGS" ${ARGN})
 
     set(FAMILY_NAME ${ARG_FAMILY_NAME})
     set(GENERATED_DIR "${ARG_GENERATED_DIR}")
@@ -193,7 +193,7 @@ function(xsr_define_fixed_function_variants)
             SOURCE "${GENERATED_DIR}/${VARIANT}.hlsl"
             OUTPUT_DIR "${GENERATED_DIR}"
             PROFILE ${ARG_PROFILE}
-            DXC ${ARG_DXC}
+            DXC "${ARG_DXC}"
             DXIL ${ARG_DXIL}
             DEPENDS ${ARG_SHARED_DEPENDENCIES}
             ARGS ${ARG_ARGS})
@@ -216,8 +216,8 @@ endfunction()
 # - PIXEL_STATES, VERTEX_STATES: optional, states files given to generate.py;
 #   default to the shared states.jsonl of each family
 function(xsr_add_fixed_function_shaders)
-    cmake_parse_arguments(ARG "" "TARGET;DXC;DXIL;DXIL_MACRO;OUTPUT_DIR;PIXEL_GENERATED_DIR;VERTEX_GENERATED_DIR"
-        "PIXEL_STATES;VERTEX_STATES" ${ARGN})
+    cmake_parse_arguments(ARG "" "TARGET;DXIL;DXIL_MACRO;OUTPUT_DIR;PIXEL_GENERATED_DIR;VERTEX_GENERATED_DIR"
+        "DXC;PIXEL_STATES;VERTEX_STATES" ${ARGN})
 
     if (NOT ARG_DXIL_MACRO)
         set(ARG_DXIL_MACRO XSHADER_RECOMP_DXIL)
@@ -241,7 +241,7 @@ function(xsr_add_fixed_function_shaders)
         SOURCE "${XSR_FIXED_FUNCTION_DIR}/FixedFunctionPixelShader.hlsl"
         OUTPUT_DIR "${ARG_OUTPUT_DIR}"
         PROFILE ps_6_0
-        DXC ${ARG_DXC}
+        DXC "${ARG_DXC}"
         DXIL ${ARG_DXIL}
         DEPENDS ${PIXEL_SHARED_FILES})
 
@@ -255,7 +255,7 @@ function(xsr_add_fixed_function_shaders)
             SHARED_DEPENDENCIES ${PIXEL_SHARED_FILES}
             TARGET ${ARG_TARGET}
             PROFILE ps_6_0
-            DXC ${ARG_DXC}
+            DXC "${ARG_DXC}"
             DXIL ${ARG_DXIL})
     endif()
 
@@ -269,7 +269,7 @@ function(xsr_add_fixed_function_shaders)
         SOURCE "${XSR_FIXED_FUNCTION_DIR}/FixedFunctionVertexShader.hlsl"
         OUTPUT_DIR "${ARG_OUTPUT_DIR}"
         PROFILE vs_6_0
-        DXC ${ARG_DXC}
+        DXC "${ARG_DXC}"
         DXIL ${ARG_DXIL}
         DEPENDS ${VERTEX_SHARED_FILES}
         ARGS -fvk-invert-y)
@@ -284,7 +284,7 @@ function(xsr_add_fixed_function_shaders)
             SHARED_DEPENDENCIES ${VERTEX_SHARED_FILES}
             TARGET ${ARG_TARGET}
             PROFILE vs_6_0
-            DXC ${ARG_DXC}
+            DXC "${ARG_DXC}"
             DXIL ${ARG_DXIL}
             ARGS -fvk-invert-y)
     endif()
