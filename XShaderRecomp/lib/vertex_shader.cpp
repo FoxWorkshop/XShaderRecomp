@@ -189,7 +189,7 @@ namespace XboxVertexShaderDecoder
 			param.Address = C;
 			break;
 		default:
-			printf("parameter type unknown\n");
+			XSHR_LOG("parameter type unknown\n");
 		}
 
 		int d = FLD_NEG - FLD_A_NEG;
@@ -208,7 +208,7 @@ namespace XboxVertexShaderDecoder
 		VSH_ILU ILU = (VSH_ILU)VshGetField(pShaderToken, FLD_ILU);
 		VSH_MAC MAC = (VSH_MAC)VshGetField(pShaderToken, FLD_MAC);
 		if (MAC > MAC_ARL)
-			printf("Unknown MAC\n");
+			XSHR_LOG("Unknown MAC\n");
 
 		// MAC,ILU output R register
 		int16_t RAddress = VshGetField(pShaderToken, FLD_OUT_R);
@@ -334,7 +334,7 @@ void DestRegisterHlsl(std::stringstream& hlsl, VSH_IMD_DEST& dest) {
 		// Access the HLSL capital C[] constants array, with the index bias applied :
 		// TODO : Avoid out-of-bound writes (perhaps writing to a reserved index?)
 		hlsl << "C[" << dest.Address + X_D3DSCM_CORRECTION << "]";
-		printf("Vertex shader writes to constant table\n");
+		XSHR_LOG("Vertex shader writes to constant table\n");
 		break;
 	case IMD_DEST_R:
 		hlsl << "r" << dest.Address;
@@ -363,8 +363,8 @@ void DestMaskHlsl(std::stringstream& hlsl, VSH_IMD_DEST& dest)
 		dest.Address == OREG_OFOG &&
 		dest.Mask != MASK_X)
 	{
-		printf("Vertex shader uses oFog mask other than x\n");
-		printf("WARNING oFog mask was %#x\n", dest.Mask);
+		XSHR_LOG("Vertex shader uses oFog mask other than x\n");
+		XSHR_LOG("WARNING oFog mask was %#x\n", dest.Mask);
 		hlsl << "x"; // write to x instead
 		return;
 	}
@@ -610,7 +610,7 @@ void CompileVertexShader
 	std::string common;
 
 
-	printf("[XSHR] Compiling Vertex Shader with hash 0x%016llx\n", hashKey);
+	XSHR_LOG("[XSHR] Compiling Vertex Shader with hash 0x%016llx\n", hashKey);
 	std::ostringstream oss;
 	oss << std::hex << hashKey;
 	std::string hash_str = oss.str();
@@ -660,11 +660,11 @@ void CompileVertexShader
 	const char* notionalSourceName = s.c_str();
 	auto res = CompileShader(hlsl_final, vs_model_, ppHostShader, notionalSourceName, vulkan);
 	if (FAILED(res)) {
-		printf("[XSHR] Failed to compile vertex shader with hash 0x%016llx\n", hashKey);
+		XSHR_LOG("[XSHR] Failed to compile vertex shader with hash 0x%016llx\n", hashKey);
 	}
 	else
 	{
-		printf("[XSHR] Successfully compiled vertex shader with hash 0x%016llx\n", hashKey);
+		XSHR_LOG("[XSHR] Successfully compiled vertex shader with hash 0x%016llx\n", hashKey);
 	}
 }
 
@@ -757,14 +757,14 @@ const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DW
 				case D3DDECLTYPE_SHORT2:
 				case D3DDECLTYPE_SHORT2N:
 				case D3DDECLTYPE_USHORT2N:
-					printf("[XSHR] Shader Int2 detected.\n");
+					XSHR_LOG("[XSHR] Shader Int2 detected.\n");
 					type = Bones_int2;
 					break;
 
 				case D3DDECLTYPE_SHORT4:
 				case D3DDECLTYPE_SHORT4N:
 				case D3DDECLTYPE_USHORT4N:
-					printf("[XSHR] Shader Int4 detected.\n");
+					XSHR_LOG("[XSHR] Shader Int4 detected.\n");
 					type = Bones_int4;
 					break;
 				}
@@ -833,7 +833,7 @@ const uint8_t* CreateRecompiledShader(size_t handle, uint32_t* pXboxFunction, DW
 	}
 	else
 	{
-		printf("[XShaderRecomp] WARNING: Empty vertex shader function\n");
+		XSHR_LOG("[XShaderRecomp] WARNING: Empty vertex shader function\n");
 	}
 
 

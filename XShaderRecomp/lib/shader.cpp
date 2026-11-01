@@ -33,7 +33,7 @@ std::ifstream OpenWithRetry(const std::string& path)
 
 		if (failures++ > 10) {
 			// crash?
-			printf("Error opening shader file: %s\n", path.c_str());
+			XSHR_LOG("Error opening shader file: %s\n", path.c_str());
 			break;
 		}
 	}

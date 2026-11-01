@@ -91,9 +91,9 @@ void RPSRegisterObject::Decode(uint8_t Value)
 #ifndef NDEBUG
 
 	if (Reg == 6)
-		printf("Unknown PS_REGISTER : 6\n");
+		XSHR_LOG("Unknown PS_REGISTER : 6\n");
 	if (Reg == 7)
-		printf("Unknown PS_REGISTER : 7\n");
+		XSHR_LOG("Unknown PS_REGISTER : 7\n");
 #endif // NDEBUG
 }
 
@@ -117,20 +117,20 @@ void RPSInputRegister::Decode(uint8_t Value, unsigned stage_nr, bool isRGB)
 	if (stage_nr <= X_PSH_COMBINECOUNT) {
 		if (Reg == PS_REGISTER_FOG) {
 			if (!isRGB)
-				printf("PS_REGISTER_FOG input not allowed in Alpha register combiner\n");
+				XSHR_LOG("PS_REGISTER_FOG input not allowed in Alpha register combiner\n");
 			else if (Channel == PS_CHANNEL_ALPHA)
-				printf("PS_REGISTER_FOG.a input not allowed in RGB register combiner\n");
+				XSHR_LOG("PS_REGISTER_FOG.a input not allowed in RGB register combiner\n");
 		}
-		if (Reg == PS_REGISTER_V1R0_SUM) printf("PS_REGISTER_V1R0_SUM input only allowed in final combiner\n");
-		if (Reg == PS_REGISTER_EF_PROD) printf("PS_REGISTER_EF_PROD input only allowed in final combiner\n");
+		if (Reg == PS_REGISTER_V1R0_SUM) XSHR_LOG("PS_REGISTER_V1R0_SUM input only allowed in final combiner\n");
+		if (Reg == PS_REGISTER_EF_PROD) XSHR_LOG("PS_REGISTER_EF_PROD input only allowed in final combiner\n");
 	}
 	else { // final combiner
-		if (InputMapping == PS_INPUTMAPPING_EXPAND_NORMAL) printf("PS_INPUTMAPPING_EXPAND_NORMAL not allowed in final combiner\n");
-		if (InputMapping == PS_INPUTMAPPING_EXPAND_NEGATE) printf("PS_INPUTMAPPING_EXPAND_NEGATE not allowed in final combiner\n");
-		if (InputMapping == PS_INPUTMAPPING_HALFBIAS_NORMAL) printf("PS_INPUTMAPPING_HALFBIAS_NORMAL not allowed in final combiner\n");
-		if (InputMapping == PS_INPUTMAPPING_HALFBIAS_NEGATE) printf("PS_INPUTMAPPING_HALFBIAS_NEGATE not allowed in final combiner\n");
-		if (InputMapping == PS_INPUTMAPPING_SIGNED_IDENTITY) printf("PS_INPUTMAPPING_SIGNED_IDENTITY not allowed in final combiner\n");
-		if (InputMapping == PS_INPUTMAPPING_SIGNED_NEGATE) printf("PS_INPUTMAPPING_SIGNED_NEGATE not allowed in final combiner\n");
+		if (InputMapping == PS_INPUTMAPPING_EXPAND_NORMAL) XSHR_LOG("PS_INPUTMAPPING_EXPAND_NORMAL not allowed in final combiner\n");
+		if (InputMapping == PS_INPUTMAPPING_EXPAND_NEGATE) XSHR_LOG("PS_INPUTMAPPING_EXPAND_NEGATE not allowed in final combiner\n");
+		if (InputMapping == PS_INPUTMAPPING_HALFBIAS_NORMAL) XSHR_LOG("PS_INPUTMAPPING_HALFBIAS_NORMAL not allowed in final combiner\n");
+		if (InputMapping == PS_INPUTMAPPING_HALFBIAS_NEGATE) XSHR_LOG("PS_INPUTMAPPING_HALFBIAS_NEGATE not allowed in final combiner\n");
+		if (InputMapping == PS_INPUTMAPPING_SIGNED_IDENTITY) XSHR_LOG("PS_INPUTMAPPING_SIGNED_IDENTITY not allowed in final combiner\n");
+		if (InputMapping == PS_INPUTMAPPING_SIGNED_NEGATE) XSHR_LOG("PS_INPUTMAPPING_SIGNED_NEGATE not allowed in final combiner\n");
 	}
 }
 
@@ -145,11 +145,11 @@ void RPSCombinerOutput::Decode(uint8_t Value, uint16_t PSInputs, unsigned stage_
 	Input[1].Decode((uint8_t)(PSInputs >> 0), stage_nr, isRGB);
 
 	// Validate correctness (see NOTE below)
-	if (Reg == PS_REGISTER_C0) printf("PS_REGISTER_C0 not allowed as output\n");
-	if (Reg == PS_REGISTER_C1) printf("PS_REGISTER_C1 not allowed as output\n");
-	if (Reg == PS_REGISTER_FOG) printf("PS_REGISTER_FOG not allowed as output\n");
-	if (Reg == PS_REGISTER_V1R0_SUM) printf("PS_REGISTER_V1R0_SUM not allowed as output\n");
-	if (Reg == PS_REGISTER_EF_PROD) printf("PS_REGISTER_EF_PROD not allowed as output\n");
+	if (Reg == PS_REGISTER_C0) XSHR_LOG("PS_REGISTER_C0 not allowed as output\n");
+	if (Reg == PS_REGISTER_C1) XSHR_LOG("PS_REGISTER_C1 not allowed as output\n");
+	if (Reg == PS_REGISTER_FOG) XSHR_LOG("PS_REGISTER_FOG not allowed as output\n");
+	if (Reg == PS_REGISTER_V1R0_SUM) XSHR_LOG("PS_REGISTER_V1R0_SUM not allowed as output\n");
+	if (Reg == PS_REGISTER_EF_PROD) XSHR_LOG("PS_REGISTER_EF_PROD not allowed as output\n");
 }
 
 /* RPSCombinerStageChannel */
@@ -176,7 +176,7 @@ void RPSCombinerStageChannel::Decode(uint32_t PSInputs, uint32_t PSOutputs, unsi
 	// Check for 'discard-all-outputs'
 	if (OutputAB.DotProduct || OutputCD.DotProduct) {
 		if ((OutputAB.Reg == PS_REGISTER_DISCARD) && (OutputCD.Reg == PS_REGISTER_DISCARD))
-			printf("All two outputs discarded\n");
+			XSHR_LOG("All two outputs discarded\n");
 	}
 	else {
 		// if ((OutputAB.Reg == PS_REGISTER_DISCARD) && (OutputCD.Reg == PS_REGISTER_DISCARD) && (OutputMUX_SUM.Reg == PS_REGISTER_DISCARD)) LOG_TEST_CASE("All three outputs discarded"); 
@@ -184,32 +184,32 @@ void RPSCombinerStageChannel::Decode(uint32_t PSInputs, uint32_t PSOutputs, unsi
 
 	// Validate correctness (see NOTE below)
 	if ((PSOutputs & ~0x000FFFFF) > 0)
-		printf("Unknown PS_COMBINEROUTPUT flag bits detected\n");
+		XSHR_LOG("Unknown PS_COMBINEROUTPUT flag bits detected\n");
 	if (CombinerOutputMapping == PS_COMBINEROUTPUT_OUTPUTMAPPING_SHIFTLEFT_2_BIAS)
-		printf("PS_COMBINEROUTPUT_SHIFTLEFT_2_BIAS unsupported on NV2A?\n");
+		XSHR_LOG("PS_COMBINEROUTPUT_SHIFTLEFT_2_BIAS unsupported on NV2A?\n");
 	if (CombinerOutputMapping == PS_COMBINEROUTPUT_OUTPUTMAPPING_SHIFTRIGHT_1_BIAS)
-		printf("PS_COMBINEROUTPUT_SHIFTRIGHT_1_BIAS unsupported on NV2A?\n");
+		XSHR_LOG("PS_COMBINEROUTPUT_SHIFTRIGHT_1_BIAS unsupported on NV2A?\n");
 	if (isRGB) {
 		if (OutputMUX_SUM.Reg != PS_REGISTER_DISCARD) {
 			if (OutputCD.DotProduct)
-				printf("PS_COMBINEROUTPUT_CD_DOT_PRODUCT detected without PS_REGISTER_DISCARD in MUX_SUM\n");
+				XSHR_LOG("PS_COMBINEROUTPUT_CD_DOT_PRODUCT detected without PS_REGISTER_DISCARD in MUX_SUM\n");
 			if (OutputAB.DotProduct)
-				printf("PS_COMBINEROUTPUT_AB_DOT_PRODUCT detected without PS_REGISTER_DISCARD in MUX_SUM\n");
+				XSHR_LOG("PS_COMBINEROUTPUT_AB_DOT_PRODUCT detected without PS_REGISTER_DISCARD in MUX_SUM\n");
 		}
 		if (OutputCD.DotProduct) {
 			if (!OutputAB.DotProduct)
-				printf("PS_COMBINEROUTPUT_CD_DOT_PRODUCT detected without PS_COMBINEROUTPUT_AB_DOT_PRODUCT (so, xmd 'opcode')\n"); // Need test-cases  Note : Undefined xmd (mul/dot) *is* supported in PixelShaderTemplate.hlsl
+				XSHR_LOG("PS_COMBINEROUTPUT_CD_DOT_PRODUCT detected without PS_COMBINEROUTPUT_AB_DOT_PRODUCT (so, xmd 'opcode')\n"); // Need test-cases  Note : Undefined xmd (mul/dot) *is* supported in PixelShaderTemplate.hlsl
 		}
 	}
 	else { // DotProduct and BlueToAlpha are not valid for Alpha
 		if (OutputCD.DotProduct)
-			printf("PS_COMBINEROUTPUT_CD_DOT_PRODUCT shouldn't be set for Alpha\n");
+			XSHR_LOG("PS_COMBINEROUTPUT_CD_DOT_PRODUCT shouldn't be set for Alpha\n");
 		if (OutputAB.DotProduct)
-			printf("PS_COMBINEROUTPUT_AB_DOT_PRODUCT shouldn't be set for Alpha\n");
+			XSHR_LOG("PS_COMBINEROUTPUT_AB_DOT_PRODUCT shouldn't be set for Alpha\n");
 		if (OutputCD.BlueToAlpha)
-			printf("PS_COMBINEROUTPUT_CD_BLUE_TO_ALPHA shouldn't be set for Alpha\n");
+			XSHR_LOG("PS_COMBINEROUTPUT_CD_BLUE_TO_ALPHA shouldn't be set for Alpha\n");
 		if (OutputAB.BlueToAlpha)
-			printf("PS_COMBINEROUTPUT_AB_BLUE_TO_ALPHA shouldn't be set for Alpha\n");
+			XSHR_LOG("PS_COMBINEROUTPUT_AB_BLUE_TO_ALPHA shouldn't be set for Alpha\n");
 	}
 }
 
@@ -234,15 +234,15 @@ void RPSFinalCombiner::Decode(const uint32_t PSFinalCombinerInputsABCD, const ui
 
 	// if (Input[0].Channel != PS_CHANNEL_ALPHA) LOG_TEST_CASE("PS_CHANNEL_RGB/PS_CHANNEL_BLUE detected on final combiner A input"); // Note : test-case ModifyPixelShader uses PS_REGISTER_FOG.rgb and seems to expect .rgb handling (not PS_CHANNEL_BLUE's .b)
 	if (Input[4].Channel == PS_CHANNEL_ALPHA)
-		printf("PS_CHANNEL_ALPHA detected on final combiner E input\n"); // Need test-case to determine how this should behave (calculating EF_PROD) : .aaa instead of .rgb?
+		XSHR_LOG("PS_CHANNEL_ALPHA detected on final combiner E input\n"); // Need test-case to determine how this should behave (calculating EF_PROD) : .aaa instead of .rgb?
 	if (Input[5].Channel == PS_CHANNEL_ALPHA)
-		printf("PS_CHANNEL_ALPHA detected on final combiner F input\n"); // Need test-case to determine how this should behave (calculating EF_PROD) : .aaa instead of .rgb?
+		XSHR_LOG("PS_CHANNEL_ALPHA detected on final combiner F input\n"); // Need test-case to determine how this should behave (calculating EF_PROD) : .aaa instead of .rgb?
 	// if (Input[6].Channel == PS_CHANNEL_BLUE) LOG_TEST_CASE("PS_CHANNEL_ALPHA detected on final combiner G input"); // PS_CHANNEL_BLUE (==0==PS_CHANNEL_RGB) uses G.b
 	// if (Input[6].Channel == PS_CHANNEL_ALPHA) LOG_TEST_CASE("PS_CHANNEL_ALPHA detected on final combiner G input"); // PS_CHANNEL_ALPHA (==1) uses .a  Test-case : XDK samples BumpDemo,BumpEarth,BumpLens,Explosion
 
 	// Validate correctness (see NOTE below)
 	if ((FinalCombinerSettingFlags & ~0xE0) > 0)
-		printf("Unknown FinalCombinerSetting bits detected\n");
+		XSHR_LOG("Unknown FinalCombinerSetting bits detected\n");
 #endif
 }
 
@@ -256,69 +256,69 @@ void DecodedRegisterCombiner::GetPSTextureModes(X_D3DPIXELSHADERDEF* pPSDef, PS_
 
 #ifndef NDEBUG
 		if (psTextureModes[i] == PS_TEXTUREMODES_PROJECT3D)
-			printf("PS_TEXTUREMODES_PROJECT3D\n");
+			XSHR_LOG("PS_TEXTUREMODES_PROJECT3D\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_CUBEMAP)
-			printf("PS_TEXTUREMODES_CUBEMAP\n");
+			XSHR_LOG("PS_TEXTUREMODES_CUBEMAP\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_PASSTHRU)
-			printf("PS_TEXTUREMODES_PASSTHRU\n");
+			XSHR_LOG("PS_TEXTUREMODES_PASSTHRU\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_CLIPPLANE)
-			printf("PS_TEXTUREMODES_CLIPPLANE\n");
+			XSHR_LOG("PS_TEXTUREMODES_CLIPPLANE\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_BUMPENVMAP_LUM)
-			printf("PS_TEXTUREMODES_BUMPENVMAP_LUM\n");
+			XSHR_LOG("PS_TEXTUREMODES_BUMPENVMAP_LUM\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_BRDF)
-			printf("PS_TEXTUREMODES_BRDF\n");
+			XSHR_LOG("PS_TEXTUREMODES_BRDF\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_ST)
-			printf("PS_TEXTUREMODES_DOT_ST\n");
+			XSHR_LOG("PS_TEXTUREMODES_DOT_ST\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_ZW)
-			printf("PS_TEXTUREMODES_DOT_ZW\n");
+			XSHR_LOG("PS_TEXTUREMODES_DOT_ZW\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_DIFF)
-			printf("PS_TEXTUREMODES_DOT_RFLCT_DIFF\n");
+			XSHR_LOG("PS_TEXTUREMODES_DOT_RFLCT_DIFF\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_SPEC)
-			printf("PS_TEXTUREMODES_DOT_RFLCT_SPEC\n");
+			XSHR_LOG("PS_TEXTUREMODES_DOT_RFLCT_SPEC\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_STR_3D)
-			printf("PS_TEXTUREMODES_DOT_STR_3D\n");
+			XSHR_LOG("PS_TEXTUREMODES_DOT_STR_3D\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_STR_CUBE)
-			printf("PS_TEXTUREMODES_DOT_STR_CUBE\n");
+			XSHR_LOG("PS_TEXTUREMODES_DOT_STR_CUBE\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_DPNDNT_AR)
-			printf("PS_TEXTUREMODES_DPNDNT_AR\n");
+			XSHR_LOG("PS_TEXTUREMODES_DPNDNT_AR\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_DPNDNT_GB)
-			printf("PS_TEXTUREMODES_DPNDNT_GB\n");
+			XSHR_LOG("PS_TEXTUREMODES_DPNDNT_GB\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_DOTPRODUCT)
-			printf("PS_TEXTUREMODES_DOTPRODUCT\n");
+			XSHR_LOG("PS_TEXTUREMODES_DOTPRODUCT\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST)
-			printf("PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST\n");
+			XSHR_LOG("PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST\n");
 
 		// Validate correctness (see NOTE below)
 		if (psTextureModes[i] == PS_TEXTUREMODES_BUMPENVMAP) if (i < 1)
-			printf("PS_TEXTUREMODES_BUMPENVMAP only allowed in stage 1, 2 or 3\n");
+			XSHR_LOG("PS_TEXTUREMODES_BUMPENVMAP only allowed in stage 1, 2 or 3\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_BUMPENVMAP_LUM) if (i < 1)
-			printf("PS_TEXTUREMODES_BUMPENVMAP_LUM only allowed in stage 1, 2 or 3\n");
+			XSHR_LOG("PS_TEXTUREMODES_BUMPENVMAP_LUM only allowed in stage 1, 2 or 3\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_BRDF) if (i < 2)
-			printf("PS_TEXTUREMODES_BRDF only allowed in stage 2 or 3\n");
+			XSHR_LOG("PS_TEXTUREMODES_BRDF only allowed in stage 2 or 3\n");
 		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_ST) {
-			if (i < 2) printf("PS_TEXTUREMODES_DOT_ST only allowed in stage 2 or 3\n");
+			if (i < 2) XSHR_LOG("PS_TEXTUREMODES_DOT_ST only allowed in stage 2 or 3\n");
 			if (psTextureModes[i - 1] != PS_TEXTUREMODES_DOTPRODUCT)
-				printf("PS_TEXTUREMODES_DOT_ST only allowed after PS_TEXTUREMODES_DOTPRODUCT\n");
+				XSHR_LOG("PS_TEXTUREMODES_DOT_ST only allowed after PS_TEXTUREMODES_DOTPRODUCT\n");
 		}
 		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_ZW) {
-			if (i < 2) printf("PS_TEXTUREMODES_DOT_ZW only allowed in stage 2 or 3\n");
-			if (psTextureModes[i - 1] != PS_TEXTUREMODES_DOTPRODUCT) printf("PS_TEXTUREMODES_DOT_ZW only allowed after PS_TEXTUREMODES_DOTPRODUCT\n");
+			if (i < 2) XSHR_LOG("PS_TEXTUREMODES_DOT_ZW only allowed in stage 2 or 3\n");
+			if (psTextureModes[i - 1] != PS_TEXTUREMODES_DOTPRODUCT) XSHR_LOG("PS_TEXTUREMODES_DOT_ZW only allowed after PS_TEXTUREMODES_DOTPRODUCT\n");
 		}
-		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_DIFF) if (i != 2) printf("PS_TEXTUREMODES_DOT_RFLCT_DIFF only allowed in stage 2\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_SPEC) if (i < 3) printf("PS_TEXTUREMODES_DOT_RFLCT_SPEC only allowed in stage 3\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_STR_3D) if (i < 3) printf("PS_TEXTUREMODES_DOT_STR_3D only allowed in stage 3\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_STR_CUBE) if (i < 3) printf("PS_TEXTUREMODES_DOT_STR_CUBE only allowed in stage 1, 2 or 3\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DPNDNT_AR) if (i < 1) printf("PS_TEXTUREMODES_DPNDNT_AR only allowed in stage 1, 2 or 3\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DPNDNT_GB) if (i < 1) printf("PS_TEXTUREMODES_DPNDNT_GB only allowed in stage 1, 2 or 3\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DOTPRODUCT) if (i < 1 || i > 2) printf("PS_TEXTUREMODES_DOTPRODUCT only allowed in stage 1 or 2\n");
-		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST) if (i < 3) printf("PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST only allowed in 3\n");
-		if (psTextureModes[i] > PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST) printf("Invalid PS_TEXTUREMODES in stage?\n");
+		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_DIFF) if (i != 2) XSHR_LOG("PS_TEXTUREMODES_DOT_RFLCT_DIFF only allowed in stage 2\n");
+		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_SPEC) if (i < 3) XSHR_LOG("PS_TEXTUREMODES_DOT_RFLCT_SPEC only allowed in stage 3\n");
+		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_STR_3D) if (i < 3) XSHR_LOG("PS_TEXTUREMODES_DOT_STR_3D only allowed in stage 3\n");
+		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_STR_CUBE) if (i < 3) XSHR_LOG("PS_TEXTUREMODES_DOT_STR_CUBE only allowed in stage 1, 2 or 3\n");
+		if (psTextureModes[i] == PS_TEXTUREMODES_DPNDNT_AR) if (i < 1) XSHR_LOG("PS_TEXTUREMODES_DPNDNT_AR only allowed in stage 1, 2 or 3\n");
+		if (psTextureModes[i] == PS_TEXTUREMODES_DPNDNT_GB) if (i < 1) XSHR_LOG("PS_TEXTUREMODES_DPNDNT_GB only allowed in stage 1, 2 or 3\n");
+		if (psTextureModes[i] == PS_TEXTUREMODES_DOTPRODUCT) if (i < 1 || i > 2) XSHR_LOG("PS_TEXTUREMODES_DOTPRODUCT only allowed in stage 1 or 2\n");
+		if (psTextureModes[i] == PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST) if (i < 3) XSHR_LOG("PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST only allowed in 3\n");
+		if (psTextureModes[i] > PS_TEXTUREMODES_DOT_RFLCT_SPEC_CONST) XSHR_LOG("Invalid PS_TEXTUREMODES in stage?\n");
 #endif
 	}
 
 	// Validate correctness (see NOTE below)
 	if ((pPSDef->PSTextureModes & ~0x000FFFFF) > 0)
-		printf("Unknown PSTextureModes bits detected\n");
+		XSHR_LOG("Unknown PSTextureModes bits detected\n");
 
 }
 
@@ -332,18 +332,18 @@ void DecodedRegisterCombiner::GetPSDotMapping(X_D3DPIXELSHADERDEF* pPSDef, PS_DO
 #ifndef NDEBUG
 		// Discover test-cases (see TODO below)
 		// if (psDotMapping[i] == PS_DOTMAPPING_ZERO_TO_ONE) LOG_TEST_CASE("PS_DOTMAPPING_ZERO_TO_ONE"); // Note : Most common scenario, no need for test-cases
-		if (psDotMapping[i] == PS_DOTMAPPING_MINUS1_TO_1_D3D) printf("PS_DOTMAPPING_MINUS1_TO_1_D3D\n"); // Test-case : XDK samples BumpDemo, Minnaert
-		if (psDotMapping[i] == PS_DOTMAPPING_MINUS1_TO_1_GL) printf("PS_DOTMAPPING_MINUS1_TO_1_GL\n");
-		if (psDotMapping[i] == PS_DOTMAPPING_MINUS1_TO_1) printf("PS_DOTMAPPING_MINUS1_TO_1\n");
-		if (psDotMapping[i] == PS_DOTMAPPING_HILO_1) printf("PS_DOTMAPPING_HILO_1\n");
-		if (psDotMapping[i] == PS_DOTMAPPING_HILO_HEMISPHERE_D3D) printf("PS_DOTMAPPING_HILO_HEMISPHERE_D3D\n");
-		if (psDotMapping[i] == PS_DOTMAPPING_HILO_HEMISPHERE_GL) printf("PS_DOTMAPPING_HILO_HEMISPHERE_GL\n");
-		if (psDotMapping[i] == PS_DOTMAPPING_HILO_HEMISPHERE) printf("PS_DOTMAPPING_HILO_HEMISPHERE\n");
+		if (psDotMapping[i] == PS_DOTMAPPING_MINUS1_TO_1_D3D) XSHR_LOG("PS_DOTMAPPING_MINUS1_TO_1_D3D\n"); // Test-case : XDK samples BumpDemo, Minnaert
+		if (psDotMapping[i] == PS_DOTMAPPING_MINUS1_TO_1_GL) XSHR_LOG("PS_DOTMAPPING_MINUS1_TO_1_GL\n");
+		if (psDotMapping[i] == PS_DOTMAPPING_MINUS1_TO_1) XSHR_LOG("PS_DOTMAPPING_MINUS1_TO_1\n");
+		if (psDotMapping[i] == PS_DOTMAPPING_HILO_1) XSHR_LOG("PS_DOTMAPPING_HILO_1\n");
+		if (psDotMapping[i] == PS_DOTMAPPING_HILO_HEMISPHERE_D3D) XSHR_LOG("PS_DOTMAPPING_HILO_HEMISPHERE_D3D\n");
+		if (psDotMapping[i] == PS_DOTMAPPING_HILO_HEMISPHERE_GL) XSHR_LOG("PS_DOTMAPPING_HILO_HEMISPHERE_GL\n");
+		if (psDotMapping[i] == PS_DOTMAPPING_HILO_HEMISPHERE) XSHR_LOG("PS_DOTMAPPING_HILO_HEMISPHERE\n");
 #endif
 	}
 
 	// Validate correctness (see NOTE below)
-	if ((pPSDef->PSDotMapping & ~0x00000777) > 0) printf("Unknown PSDotMapping bits detected\n");
+	if ((pPSDef->PSDotMapping & ~0x00000777) > 0) XSHR_LOG("Unknown PSDotMapping bits detected\n");
 }
 
 void DecodedRegisterCombiner::GetPSCompareModes(X_D3DPIXELSHADERDEF* pPSDef, bool psCompareModes[X_D3DTS_STAGECOUNT][4])
@@ -358,7 +358,7 @@ void DecodedRegisterCombiner::GetPSCompareModes(X_D3DPIXELSHADERDEF* pPSDef, boo
 
 	// Validate correctness (see NOTE below)
 	if ((pPSDef->PSCompareMode & ~0x0000FFFF) > 0)
-		printf("Unknown PSCompareMode bits detected\n");
+		XSHR_LOG("Unknown PSCompareMode bits detected\n");
 }
 
 void DecodedRegisterCombiner::GetPSInputTexture(X_D3DPIXELSHADERDEF* pPSDef, int32_t psInputTexture[X_D3DTS_STAGECOUNT])
@@ -370,15 +370,15 @@ void DecodedRegisterCombiner::GetPSInputTexture(X_D3DPIXELSHADERDEF* pPSDef, int
 
 #ifndef NDEBUG
 	// Discover test-cases (see TODO below)
-	if (psInputTexture[2] == 0) printf("PS_INPUTTEXTURE(2) uses texture 0\n");
+	if (psInputTexture[2] == 0) XSHR_LOG("PS_INPUTTEXTURE(2) uses texture 0\n");
 	// if (psInputTexture[2] == 1) LOG_TEST_CASE("PS_INPUTTEXTURE(2) uses texture 1"); // Test-case : XDK sample BumpEarth,Explosion,ZSprite
-	if (psInputTexture[3] == 0) printf("PS_INPUTTEXTURE(3) uses texture 0\n");
+	if (psInputTexture[3] == 0) XSHR_LOG("PS_INPUTTEXTURE(3) uses texture 0\n");
 	// if (psInputTexture[3] == 1) LOG_TEST_CASE("PS_INPUTTEXTURE(3) uses texture 1"); // Test-case : XDK sample Explosion,ZSprite
-	if (psInputTexture[3] == 2) printf("PS_INPUTTEXTURE(3) uses texture 2\n");
+	if (psInputTexture[3] == 2) XSHR_LOG("PS_INPUTTEXTURE(3) uses texture 2\n");
 
 	// Validate correctness (see NOTE below)
-	if (psInputTexture[3] == 3) printf("PS_INPUTTEXTURE(3) incorrectly uses texture 3\n");
-	if ((pPSDef->PSInputTexture & ~0x00310000) > 0) printf("Unknown PSInputTexture bits detected\n");
+	if (psInputTexture[3] == 3) XSHR_LOG("PS_INPUTTEXTURE(3) incorrectly uses texture 3\n");
+	if ((pPSDef->PSInputTexture & ~0x00310000) > 0) XSHR_LOG("Unknown PSInputTexture bits detected\n");
 #endif
 }
 
@@ -412,20 +412,20 @@ void DecodedRegisterCombiner::Decode(X_D3DPIXELSHADERDEF* pPSDef)
 #ifndef NDEBUG
 	// Discover test-cases 
 	if (NumberOfCombiners == 0)
-		printf("NumberOfCombiners is zero\n");
+		XSHR_LOG("NumberOfCombiners is zero\n");
 
 	if (!CombinerMuxesOnMsb)
-		printf("PS_COMBINERCOUNT_MUX_LSB detected\n");
+		XSHR_LOG("PS_COMBINERCOUNT_MUX_LSB detected\n");
 
 	if (TexModeAdjust)
-		printf("PS_GLOBALFLAGS_TEXMODE_ADJUST detected\n");
+		XSHR_LOG("PS_GLOBALFLAGS_TEXMODE_ADJUST detected\n");
 
 	// Validate correctness (see NOTE below)
 	if (NumberOfCombiners > 8)
-		printf("NumberOfCombiners bigger than maximum (of 8)\n");
+		XSHR_LOG("NumberOfCombiners bigger than maximum (of 8)\n");
 
 	if ((pPSDef->PSCombinerCount & ~0x0001110F) > 0)
-		printf("Unknown PSCombinerCount bits detected\n");
+		XSHR_LOG("Unknown PSCombinerCount bits detected\n");
 #endif
 }
 
@@ -491,13 +491,13 @@ typedef struct s_HostPSDef {
 				// Fixup sampling cube textures with PROJECT2D
 
 				if (ActiveTextureTypes[i] == X_D3DRTYPE_CUBETEXTURE && RC.PSTextureModes[i] == PS_TEXTUREMODES_PROJECT2D) {
-					printf("PROJECT2D sampling is used with a cubemap texture - using CUBEMAP sampling instead\n");
+					XSHR_LOG("PROJECT2D sampling is used with a cubemap texture - using CUBEMAP sampling instead\n");
 					RC.PSTextureModes[i] = PS_TEXTUREMODES_CUBEMAP;
 				}
 
 
 				if (ActiveTextureTypes[i] == X_D3DRTYPE_CUBETEXTURE && RC.PSTextureModes[i] == PS_TEXTUREMODES_DOT_STR_3D) {
-					printf("DOT_STR_3D sampling is used with a cubemap texture - using DOT_STR_CUBE sampling instead\n");
+					XSHR_LOG("DOT_STR_3D sampling is used with a cubemap texture - using DOT_STR_CUBE sampling instead\n");
 					RC.PSTextureModes[i] = PS_TEXTUREMODES_DOT_STR_CUBE;
 				}
 			}
@@ -848,7 +848,7 @@ void CompilePixelShader
 	bool vulkan = false
 )
 {
-	printf("[XSHR] Compiling Pixel Shader with hash 0x%016llx\n", hash);
+	XSHR_LOG("[XSHR] Compiling Pixel Shader with hash 0x%016llx\n", hash);
 	auto hlsl_stream = std::stringstream();
 	BuildShader(pIntermediateShader, hlsl_stream);
 
@@ -887,10 +887,10 @@ void CompilePixelShader
 
 	auto psRes = CompileShader(hlsl_str, ps_model_, ppHostShader, template_ps.c_str(), vulkan);
 	if (FAILED(psRes)) {
-		printf("[XSHR] Failed to compile pixel shader with hash 0x%016llx\n", hash);
+		XSHR_LOG("[XSHR] Failed to compile pixel shader with hash 0x%016llx\n", hash);
 	}
 	else {
-		printf("[XSHR] Successfully compiled pixel shader with hash 0x%016llx\n", hash);
+		XSHR_LOG("[XSHR] Successfully compiled pixel shader with hash 0x%016llx\n", hash);
 	}
 }
 
@@ -1052,7 +1052,7 @@ std::string_view GetD3DTOPString(int d3dtop)
 #else
 	if (d3dtop < 1 || d3dtop > 26) {
 #endif
-		printf("Unmapped texture operation %d\n", d3dtop);
+		XSHR_LOG("Unmapped texture operation %d\n", d3dtop);
 		d3dtop = 0; // undefined
 	}
 
@@ -1084,14 +1084,14 @@ std::string GetD3DTASumString(int d3dta, bool allowModifier = true)
 	int i = d3dta & ~flagMask;
 
 	if (i < 0 || i > 6) {
-		printf("Unmapped texture argument %d on texture arg\n", i);
+		XSHR_LOG("Unmapped texture argument %d on texture arg\n", i);
 		i = 7; // undefined
 	}
 
 	auto str = argToString[i];
 	if (iFlags) {
 		if (!allowModifier) {
-			printf("Modifier not expected on texture argument\n");
+			XSHR_LOG("Modifier not expected on texture argument\n");
 		}
 
 		if (iFlags == X_D3DTA_COMPLEMENT)
@@ -1099,7 +1099,7 @@ std::string GetD3DTASumString(int d3dta, bool allowModifier = true)
 		else if (iFlags == X_D3DTA_ALPHAREPLICATE)
 			str += " + X_D3DTA_ALPHAREPLICATE";
 		else {
-			printf("Unmapped texture modifier %d\n", iFlags);
+			XSHR_LOG("Unmapped texture modifier %d\n", iFlags);
 			str += " /* + UNKNOWN MODIFIER */";
 		}
 	}

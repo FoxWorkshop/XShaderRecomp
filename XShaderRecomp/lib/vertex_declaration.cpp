@@ -97,7 +97,7 @@ private:
 				pCurrentHostVertexElement->UsageIndex = 1; // TODO ; Is this correct?
 				return true;
 			default:
-				printf("invalid TessellationType\n");
+				XSHR_LOG("invalid TessellationType\n");
 				return false;
 			}
 		}
@@ -227,7 +227,7 @@ private:
 			assert(false); // Should already be handled above
 			break;
 		default:
-			printf("Unknown data type for D3DVSD_REG\n");
+			XSHR_LOG("Unknown data type for D3DVSD_REG\n");
 			return false;
 		}
 
@@ -328,7 +328,7 @@ public:
 					< std::tie(regY.StreamIndex, regY.Offset);
 			});
 
-		printf("[XSHR] Parsing vertex declaration\n");
+		XSHR_LOG("[XSHR] Parsing vertex declaration\n");
 		for (size_t i = 0; i < orderedRegisterIndices.size(); i++) {
 			auto regIndex = orderedRegisterIndices[i];
 			auto& slot = pXboxDeclaration->Slots[regIndex];
@@ -485,7 +485,7 @@ static X_D3DVertexShader* XboxVertexShaderFromFVF(size_t xboxFvf)
 	if (xboxFvf == 0)
 	{
 		std::string pos = std::to_string(position);
-		printf("xboxFvF is null, position is equal %s\n", pos.c_str());
+		XSHR_LOG("xboxFvF is null, position is equal %s\n", pos.c_str());
 	}
 
 	switch (position) {
@@ -626,7 +626,7 @@ X_VERTEXATTRIBUTEFORMAT* GetXboxVertexAttributeFormat(size_t handle)
 	X_D3DVertexShader* pXboxVertexShader = GetXboxVertexShader(handle);
 	if (pXboxVertexShader == 0)
 	{
-		printf("Error getting vertex shader\n");
+		XSHR_LOG("Error getting vertex shader\n");
 		return nullptr;
 	}
 
@@ -656,16 +656,16 @@ HostVertexDeclaration* HostGetVertexDeclaration(size_t handle, const bool isFixe
 
 
 	/*	auto vertexElement_ = pRecompiledVertexElements;
-		printf("Guest Vertex elements logs\n");
+		XSHR_LOG("Guest Vertex elements logs\n");
 		int index = 0;
 		while (vertexElement_->Stream != 0xFF && vertexElement_->Type != D3DDECLTYPE_UNUSED)
 		{
-			printf("Stream[%d], %d\n", index, vertexElement_->Stream);
-			printf("type[%d], %d\n", index, vertexElement_->Type);
-			printf("Offset[%d], %d\n", index, vertexElement_->Offset);
-			printf("Method[%d], %d\n", index, vertexElement_->Method);
-			printf("Usage[%d], %d\n", index, vertexElement_->Usage);
-			printf("Index[%d], %d\n", index, vertexElement_->UsageIndex);
+			XSHR_LOG("Stream[%d], %d\n", index, vertexElement_->Stream);
+			XSHR_LOG("type[%d], %d\n", index, vertexElement_->Type);
+			XSHR_LOG("Offset[%d], %d\n", index, vertexElement_->Offset);
+			XSHR_LOG("Method[%d], %d\n", index, vertexElement_->Method);
+			XSHR_LOG("Usage[%d], %d\n", index, vertexElement_->Usage);
+			XSHR_LOG("Index[%d], %d\n", index, vertexElement_->UsageIndex);
 			++vertexElement_;
 			++index;
 		}*/

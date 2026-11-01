@@ -18,6 +18,14 @@ using ComPtr = CComPtr<T>;
 #include <bit>
 #include <cassert>
 #include <cstdint>
+#include <cstdio>
+
+// define XSHADER_RECOMP_NOLOGGING to stub logging
+#ifdef XSHADER_RECOMP_NOLOGGING
+#define XSHR_LOG(...) ((void)0)
+#else
+#define XSHR_LOG(...) printf(__VA_ARGS__)
+#endif
 
 #ifndef UNREACHABLE
 #ifdef _MSC_VER
