@@ -170,19 +170,23 @@ struct PushConstants
 
 [[vk::push_constant]] ConstantBuffer<PushConstants> g_PushConstants;
 
+// Sewer note: Read 16-byte aligned for perf.
+#define REGISTER_ALIGNMENT 16
+#define VS_LOAD_REG(addr) vk::RawBufferLoad<float4>((addr), REGISTER_ALIGNMENT)
+
 float4x4 LoadMatrix(uint64_t addr)
 {
-    float4 r0 = vk::RawBufferLoad<float4>(addr + 0);
-    float4 r1 = vk::RawBufferLoad<float4>(addr + 16);
-    float4 r2 = vk::RawBufferLoad<float4>(addr + 32);
-    float4 r3 = vk::RawBufferLoad<float4>(addr + 48);
+    float4 r0 = VS_LOAD_REG(addr + 0);
+    float4 r1 = VS_LOAD_REG(addr + 16);
+    float4 r2 = VS_LOAD_REG(addr + 32);
+    float4 r3 = VS_LOAD_REG(addr + 48);
     return float4x4(r0,r1,r2,r3);
 }
 
 Fog LoadFog(uint64_t addr)
 {
-    float4 f0 = vk::RawBufferLoad<float4>(addr);
-    float4 f1 = vk::RawBufferLoad<float4>(addr + 16);
+    float4 f0 = VS_LOAD_REG(addr);
+    float4 f1 = VS_LOAD_REG(addr + 16);
     Fog f;
     f.Enable = f0.x;
     f.DepthMode = f0.y;
@@ -196,29 +200,13 @@ Fog LoadFog(uint64_t addr)
 }
 
 #define REG(cN) ((cN) * 16)
-#define REG_COMP(c,comp) (REG(c) + (comp)*4)
-#define V_CBUFFER_OFFSET(cN, comp) ((cN)*16 + ((comp) == 'x' ? 0 : (comp) == 'y' ? 4 : (comp) == 'z' ? 8 : 12))
-#define V_ARRAY_OFFSET(cn, slot) ((cn)*16 + (slot)*16)
 #define V_STRUCT_OFFSET(cN, subOffset) (REG(cN) + (subOffset))
 
-// Separate macros for register offsets (converted to bytes) vs array indices
-#define REG_TO_BYTES(cN) ((cN) * 16)
+#define LOAD_FLOAT4(c) VS_LOAD_REG(g_PushConstants.VertexShaderConstants + REG(c))
+#define LOAD_FLOAT(c, comp) LOAD_FLOAT4(c)[comp]
 
-// For single component access within a register
-#define COMP_OFFSET(comp) ((comp) * 4)  // 0, 1, 2, or 3 for x, y, z, w
-
-// For array access where the base is a register number
-#define ARRAY_ELEMENT_BYTES(baseReg, elementIndex) (REG_TO_BYTES(baseReg) + (elementIndex) * 16)
-
-// Updated macros
-#define LOAD_FLOAT(c, comp) \
-    vk::RawBufferLoad<float>(g_PushConstants.VertexShaderConstants + REG_TO_BYTES(c) + COMP_OFFSET(comp))
-
-#define LOAD_FLOAT4(c) \
-    vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + REG_TO_BYTES(c))
-
-#define vRegisterDefaultValues(i) vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + 192*16 + (i)*16)
-#define vRegisterDefaultFlagsPacked(i) vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + 208*16 + (i)*16)
+#define vRegisterDefaultValues(i) VS_LOAD_REG(g_PushConstants.VertexShaderConstants + 192*16 + (i)*16)
+#define vRegisterDefaultFlagsPacked(i) VS_LOAD_REG(g_PushConstants.VertexShaderConstants + 208*16 + (i)*16)
 
 #define TransfoView LoadMatrix(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(0, 0))
 #define TransfoProj LoadMatrix(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(4, 0))
@@ -227,49 +215,41 @@ Fog LoadFog(uint64_t addr)
 #define TransfoWorldViewIT(i) LoadMatrix(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(40, (i)*64))
 
 
-#define PSPointSize \
-vk::RawBufferLoad<float>(g_PushConstants.VertexShaderConstants + V_CBUFFER_OFFSET(126,'x'))
+#define PSPointSize LOAD_FLOAT(126, 0)
+#define PSPointSize_Min LOAD_FLOAT(126, 1)
+#define PSPointSize_Max LOAD_FLOAT(126, 2)
+#define PSXboxRenderTargetHeight LOAD_FLOAT(126, 3)
 
-#define PSPointSize_Min \
-vk::RawBufferLoad<float>(g_PushConstants.VertexShaderConstants + V_CBUFFER_OFFSET(126,'y'))
-
-#define PSPointSize_Max \
-vk::RawBufferLoad<float>(g_PushConstants.VertexShaderConstants + V_CBUFFER_OFFSET(126,'z'))
-
-#define PSXboxRenderTargetHeight \
-vk::RawBufferLoad<float>(g_PushConstants.VertexShaderConstants + V_CBUFFER_OFFSET(126,'w'))
-
-#define PSPointScaleABC \
-vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_CBUFFER_OFFSET(127,'x'))
+#define PSPointScaleABC LOAD_FLOAT4(127)
 #define PSRenderUpscaleFactor PSPointScaleABC.w
 
 #define LIGHT_STRIDE 96
 
 #define LIGHT_CBASE 56
 #define LIGHT_SIZE_BYTES 96 // 6 float4s * 16
-#define LDiffuse(i)        vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + (LIGHT_CBASE*16 + (i)*LIGHT_SIZE_BYTES + 0))
-#define LSpecular(i)       vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + (LIGHT_CBASE*16 + (i)*LIGHT_SIZE_BYTES + 16))
-#define LPositionV(i)      vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + (LIGHT_CBASE*16 + (i)*LIGHT_SIZE_BYTES + 32))
-#define LDirectionVN(i)    vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + (LIGHT_CBASE*16 + (i)*LIGHT_SIZE_BYTES + 48))
-#define LAttenuation(i)    vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + (LIGHT_CBASE*16 + (i)*LIGHT_SIZE_BYTES + 64))
-#define LSpotParams(i)     vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + (LIGHT_CBASE*16 + (i)*LIGHT_SIZE_BYTES + 80))
+#define LDiffuse(i)        VS_LOAD_REG(g_PushConstants.VertexShaderConstants + (LIGHT_CBASE*16 + (i)*LIGHT_SIZE_BYTES + 0))
+#define LSpecular(i)       VS_LOAD_REG(g_PushConstants.VertexShaderConstants + (LIGHT_CBASE*16 + (i)*LIGHT_SIZE_BYTES + 16))
+#define LPositionV(i)      VS_LOAD_REG(g_PushConstants.VertexShaderConstants + (LIGHT_CBASE*16 + (i)*LIGHT_SIZE_BYTES + 32))
+#define LDirectionVN(i)    VS_LOAD_REG(g_PushConstants.VertexShaderConstants + (LIGHT_CBASE*16 + (i)*LIGHT_SIZE_BYTES + 48))
+#define LAttenuation(i)    VS_LOAD_REG(g_PushConstants.VertexShaderConstants + (LIGHT_CBASE*16 + (i)*LIGHT_SIZE_BYTES + 64))
+#define LSpotParams(i)     VS_LOAD_REG(g_PushConstants.VertexShaderConstants + (LIGHT_CBASE*16 + (i)*LIGHT_SIZE_BYTES + 80))
 
-#define TLightColorFront vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(104, 0))
-#define TLightColorBack vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(105, 0))
+#define TLightColorFront VS_LOAD_REG(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(104, 0))
+#define TLightColorBack VS_LOAD_REG(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(105, 0))
 
 
 #define MAT_STRIDE 80
 
 #define MDiffuse(i) \
-vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(106, (i)*MAT_STRIDE + 0))
+VS_LOAD_REG(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(106, (i)*MAT_STRIDE + 0))
 #define MAmbient(i) \
-vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(106, (i)*MAT_STRIDE + 16))
+VS_LOAD_REG(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(106, (i)*MAT_STRIDE + 16))
 #define MSpecular(i) \
-vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(106, (i)*MAT_STRIDE + 32))
+VS_LOAD_REG(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(106, (i)*MAT_STRIDE + 32))
 #define MEmissive(i) \
-vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(106, (i)*MAT_STRIDE + 48))
+VS_LOAD_REG(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(106, (i)*MAT_STRIDE + 48))
 #define MPower(i) \
-vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(106, (i)*MAT_STRIDE + 64))
+VS_LOAD_REG(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(106, (i)*MAT_STRIDE + 64))
 
 #define ModeAmbientMaterialSource LOAD_FLOAT(116,0)
 #define ModeDiffuseMaterialSource LOAD_FLOAT(116,1)
@@ -286,23 +266,16 @@ vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSE
 
 #define fog LoadFog(g_PushConstants.VertexShaderConstants + V_STRUCT_OFFSET(120,0))
 
-#define TexState_TransfoFlagsCount(i) \
-vk::RawBufferLoad<float>(g_PushConstants.VertexShaderConstants + REG(122) + (i)*16 + 0)
+#define TexState_TransfoFlagsCount(i) LOAD_FLOAT(122 + (i), 0)
+#define TexState_TransfoFlagsProj(i) LOAD_FLOAT(122 + (i), 1)
+#define TexState_TexCoordIndex(i) LOAD_FLOAT(122 + (i), 2)
+#define TexState_TexCoorIndexGen(i) LOAD_FLOAT(122 + (i), 3)
 
-#define TexState_TransfoFlagsProj(i) \
-vk::RawBufferLoad<float>(g_PushConstants.VertexShaderConstants + REG(122) + (i)*16 + 4)
+#define TexCoordComponentCount LOAD_FLOAT4(128)
 
-#define TexState_TexCoordIndex(i) \
-vk::RawBufferLoad<float>(g_PushConstants.VertexShaderConstants + REG(122) + (i)*16 + 8)
-
-#define TexState_TexCoorIndexGen(i) \
-vk::RawBufferLoad<float>(g_PushConstants.VertexShaderConstants + REG(122) + (i)*16 + 12)
-
-#define TexCoordComponentCount vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_CBUFFER_OFFSET(128, 'x') )
-
-#define xboxScreenspaceScale  vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_CBUFFER_OFFSET(212, 'x') )
-#define xboxScreenspaceOffset  vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_CBUFFER_OFFSET(213, 'x') )
-#define xboxTextureScale(i) vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants +  V_ARRAY_OFFSET(214, i) )
+#define xboxScreenspaceScale  LOAD_FLOAT4(212)
+#define xboxScreenspaceOffset  LOAD_FLOAT4(213)
+#define xboxTextureScale(i) LOAD_FLOAT4(214 + (i))
 
 #else
 

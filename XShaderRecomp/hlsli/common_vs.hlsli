@@ -13,24 +13,25 @@ struct PushConstants
 
 [[vk::push_constant]] ConstantBuffer<PushConstants> g_PushConstants;
 
-// compute offset of cN.component
-#define V_CBUFFER_OFFSET(cN, comp) ((cN)*16 + ((comp) == 'x' ? 0 : (comp) == 'y' ? 4 : (comp) == 'z' ? 8 : 12))
-#define V_ARRAY_OFFSET(cn, slot) ((cn)*16 + (slot)*16)
+// Sewer note: Read 16-byte aligned for perf.
+#define REGISTER_ALIGNMENT 16
+#define VS_REG_F(cN) vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + (cN) * 16, REGISTER_ALIGNMENT)
+#define VS_SC_REG_U(cN) vk::RawBufferLoad<uint4>(g_PushConstants.SharedConstants + (cN) * 16, REGISTER_ALIGNMENT)
 
-#define vs_consts(i) vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + (i)*16)
-#define vRegisterDefaultValues(i) vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_ARRAY_OFFSET(192, i) )
-#define vRegisterDefaultFlagsPacked(i) vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants +  V_ARRAY_OFFSET(208, i) )
+#define vs_consts(i) VS_REG_F(i)
+#define vRegisterDefaultValues(i) VS_REG_F(192 + (i))
+#define vRegisterDefaultFlagsPacked(i) VS_REG_F(208 + (i))
 
-#define xboxScreenspaceScale  vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_CBUFFER_OFFSET(212, 'x') )
-#define xboxScreenspaceOffset  vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants + V_CBUFFER_OFFSET(213, 'x') )
-#define xboxTextureScale(i) vk::RawBufferLoad<float4>(g_PushConstants.VertexShaderConstants +  V_ARRAY_OFFSET(214, i) )
+#define xboxScreenspaceScale  VS_REG_F(212)
+#define xboxScreenspaceOffset  VS_REG_F(213)
+#define xboxTextureScale(i) VS_REG_F(214 + (i))
 
 
 
-#define FogTableMode vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(81, 'z') )
-#define FogDensity vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(81, 'w') )
-#define FogStart vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(82, 'x') )
-#define FogEnd vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(82, 'y') )
+#define FogTableMode VS_SC_REG_U(81).z
+#define FogDensity VS_SC_REG_U(81).w
+#define FogStart VS_SC_REG_U(82).x
+#define FogEnd VS_SC_REG_U(82).y
 
 
 #else

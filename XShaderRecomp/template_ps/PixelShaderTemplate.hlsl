@@ -32,40 +32,42 @@ struct PushConstants
 
 [[vk::push_constant]] ConstantBuffer<PushConstants> g_PushConstants;
 
-// compute offset of cN.component
-#define V_CBUFFER_OFFSET(cN, comp) ((cN)*16 + ((comp) == 'x' ? 0 : (comp) == 'y' ? 4 : (comp) == 'z' ? 8 : 12))
-#define V_ARRAY_OFFSET(cn, slot) ((cn)*16 + (slot)*16)
+// Sewer note: Read 16-byte aligned for perf.
+#define REGISTER_ALIGNMENT 16
+#define SC_REG_U(cN) vk::RawBufferLoad<uint4>(g_PushConstants.SharedConstants + (cN) * 16, REGISTER_ALIGNMENT)
+#define SC_REG_F(cN) vk::RawBufferLoad<float4>(g_PushConstants.SharedConstants + (cN) * 16, REGISTER_ALIGNMENT)
+#define PC_REG_F(cN) vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants + (cN) * 16, REGISTER_ALIGNMENT)
 
-#define texture2D_0   vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(0, 'x') )
-#define texture2D_1   vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(0, 'y') )
-#define texture2D_2   vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(0, 'z') )
-#define texture2D_3   vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(0, 'w') )
+#define texture2D_0   SC_REG_U(0).x
+#define texture2D_1   SC_REG_U(0).y
+#define texture2D_2   SC_REG_U(0).z
+#define texture2D_3   SC_REG_U(0).w
 
-#define texture3D_0   vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(4, 'x') )
+#define texture3D_0   SC_REG_U(4).x
 
-#define textureCube_0 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(8, 'x') )
+#define textureCube_0 SC_REG_U(8).x
 
 // two stages per register: stage i is at element (i >> 1), .xy for even, .zw for odd.
-#define texCoordMin_(i) vk::RawBufferLoad<float4>(g_PushConstants.SharedConstants + V_ARRAY_OFFSET(89, i) )
+#define texCoordMin_(i) SC_REG_F(89 + (i))
 
-#define sampler_0  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(12, 'x') )
-#define sampler_1  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(12, 'y') )
-#define sampler_2  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(12, 'z') )
-#define sampler_3  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(12, 'w') )
+#define sampler_0  SC_REG_U(12).x
+#define sampler_1  SC_REG_U(12).y
+#define sampler_2  SC_REG_U(12).z
+#define sampler_3  SC_REG_U(12).w
 
-#define c0_(i) vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_ARRAY_OFFSET(0, i) )
-#define c1_(i) vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_ARRAY_OFFSET(8, i) )
+#define c0_(i) PC_REG_F(0 + (i))
+#define c1_(i) PC_REG_F(8 + (i))
 
-#define FC0  vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants + V_CBUFFER_OFFSET(16, 'x') )
-#define FC1  vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants + V_CBUFFER_OFFSET(17, 'x') )
-#define c_fog  vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants + V_CBUFFER_OFFSET(18, 'x') )
+#define FC0  PC_REG_F(16)
+#define FC1  PC_REG_F(17)
+#define c_fog  PC_REG_F(18)
 
-#define BEM(i) vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_ARRAY_OFFSET(19, i) )
-#define LUM(i) vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_ARRAY_OFFSET(23, i) )
+#define BEM(i) PC_REG_F(19 + (i))
+#define LUM(i) PC_REG_F(23 + (i))
 
-#define FRONTFACE_FACTOR vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_CBUFFER_OFFSET(27, 'x') )
-#define FOGINFO  vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants + V_CBUFFER_OFFSET(28, 'x') )
-#define FOGENABLE vk::RawBufferLoad<float4>(g_PushConstants.PixelShaderConstants +  V_CBUFFER_OFFSET(29, 'x') )
+#define FRONTFACE_FACTOR PC_REG_F(27)
+#define FOGINFO  PC_REG_F(28)
+#define FOGENABLE PC_REG_F(29)
 
 
 
