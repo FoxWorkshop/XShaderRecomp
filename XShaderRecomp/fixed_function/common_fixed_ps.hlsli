@@ -88,6 +88,23 @@ struct PushConstants
     uint64_t VertexShaderConstants;
     uint64_t PixelShaderConstants;
     uint64_t SharedConstants;
+
+    // Sewer note:
+    // - The shader reads some of these values on every pixel.
+    // - On Vulkan, reading them from SharedConstants is a memory load, which is slow.
+    // - Push constants are faster, but Vulkan only guarantees 128 bytes of them.
+    // - So we copy the most-read values here, keeping the whole struct within 128 bytes.
+    // - D3D12 doesn't need this: it reads SharedConstants as a cbuffer.
+    // - But D3D12 may get perf improvement by replicating this- that remains untested. (See commit message)
+    uint Texture3DIndex;     // c4.x
+    uint TextureCubeIndex;   // c8.x
+    uint4 Texture2DIndices;  // c0
+    uint4 SamplerIndices;    // c12
+    float4 TexCoordMin01;    // c89: stages 0 and 1
+    float4 TexCoordMax01;    // c97: stages 0 and 1
+    // Registers c86 and c87, copied as-is.
+    uint4 C86;               // FogStart, FogEnd, FogColor0, FogColor1
+    uint4 C87;               // FogColor2, alphaTestEnable, alphaFunc, alphaRef
 };
 
 [[vk::push_constant]] ConstantBuffer<PushConstants> g_PushConstants;
@@ -97,23 +114,23 @@ struct PushConstants
 #define SC_REG_U(cN) vk::RawBufferLoad<uint4>(g_PushConstants.SharedConstants + (cN) * 16, REGISTER_ALIGNMENT)
 #define SC_REG_F(cN) vk::RawBufferLoad<float4>(g_PushConstants.SharedConstants + (cN) * 16, REGISTER_ALIGNMENT)
 
-#define texture2D_0   SC_REG_U(0).x
-#define texture2D_1   SC_REG_U(0).y
-#define texture2D_2   SC_REG_U(0).z
-#define texture2D_3   SC_REG_U(0).w
+#define texture2D_0   g_PushConstants.Texture2DIndices.x
+#define texture2D_1   g_PushConstants.Texture2DIndices.y
+#define texture2D_2   g_PushConstants.Texture2DIndices.z
+#define texture2D_3   g_PushConstants.Texture2DIndices.w
 
-#define texture3D_0   SC_REG_U(4).x
+#define texture3D_0   g_PushConstants.Texture3DIndex
 
-#define textureCube_0   SC_REG_U(8).x
+#define textureCube_0   g_PushConstants.TextureCubeIndex
 
 // two stages per register: stage i is at element (i >> 1), .xy for even, .zw for odd
-#define texCoordMin_(i) SC_REG_F(89 + (i))
-#define texCoordMax_(i) SC_REG_F(97 + (i))
+#define texCoordMin_(i) ((i) == 0 ? g_PushConstants.TexCoordMin01 : SC_REG_F(89 + (i)))
+#define texCoordMax_(i) ((i) == 0 ? g_PushConstants.TexCoordMax01 : SC_REG_F(97 + (i)))
 
-#define sampler_0  SC_REG_U(12).x
-#define sampler_1  SC_REG_U(12).y
-#define sampler_2  SC_REG_U(12).z
-#define sampler_3  SC_REG_U(12).w
+#define sampler_0  g_PushConstants.SamplerIndices.x
+#define sampler_1  g_PushConstants.SamplerIndices.y
+#define sampler_2  g_PushConstants.SamplerIndices.z
+#define sampler_3  g_PushConstants.SamplerIndices.w
 
 #define color_op_0  SC_REG_U(16).x
 #define color_op_1  SC_REG_U(16).y
@@ -181,15 +198,15 @@ struct PushConstants
 #define FogTableMode SC_REG_U(85).z
 #define FogDensity SC_REG_U(85).w
 
-#define FogStart SC_REG_U(86).x
-#define FogEnd SC_REG_U(86).y
-#define FogColor0 SC_REG_F(86).z
-#define FogColor1 SC_REG_F(86).w
-#define FogColor2 SC_REG_F(87).x
+#define FogStart g_PushConstants.C86.x
+#define FogEnd g_PushConstants.C86.y
+#define FogColor0 asfloat(g_PushConstants.C86.z)
+#define FogColor1 asfloat(g_PushConstants.C86.w)
+#define FogColor2 asfloat(g_PushConstants.C87.x)
 
-#define alphaTestEnable SC_REG_U(87).y
-#define alphaFunc SC_REG_U(87).z
-#define alphaRef SC_REG_F(87).w
+#define alphaTestEnable g_PushConstants.C87.y
+#define alphaFunc g_PushConstants.C87.z
+#define alphaRef asfloat(g_PushConstants.C87.w)
 
 
 #else
