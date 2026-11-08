@@ -82,9 +82,7 @@ target_include_directories(XShaderRecompLib
     PUBLIC 
         lib
         ${CMAKE_CURRENT_BINARY_DIR}
-    PRIVATE 
         ${SMOLV_SOURCE_DIR}
-    
 )
 
 target_precompile_headers(XShaderRecompLib PRIVATE lib/pch.h)
