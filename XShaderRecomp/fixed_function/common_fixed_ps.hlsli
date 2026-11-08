@@ -88,107 +88,125 @@ struct PushConstants
     uint64_t VertexShaderConstants;
     uint64_t PixelShaderConstants;
     uint64_t SharedConstants;
+
+    // Sewer note:
+    // - The shader reads some of these values on every pixel.
+    // - On Vulkan, reading them from SharedConstants is a memory load, which is slow.
+    // - Push constants are faster, but Vulkan only guarantees 128 bytes of them.
+    // - So we copy the most-read values here, keeping the whole struct within 128 bytes.
+    // - D3D12 doesn't need this: it reads SharedConstants as a cbuffer.
+    // - But D3D12 may get perf improvement by replicating this- that remains untested. (See commit message)
+    uint Texture3DIndex;     // c4.x
+    uint TextureCubeIndex;   // c8.x
+    uint4 Texture2DIndices;  // c0
+    uint4 SamplerIndices;    // c12
+    float4 TexCoordMin01;    // c89: stages 0 and 1
+    float4 TexCoordMax01;    // c97: stages 0 and 1
+    // Registers c86 and c87, copied as-is.
+    uint4 C86;               // FogStart, FogEnd, FogColor0, FogColor1
+    uint4 C87;               // FogColor2, alphaTestEnable, alphaFunc, alphaRef
 };
 
 [[vk::push_constant]] ConstantBuffer<PushConstants> g_PushConstants;
 
-// compute offset of cN.component
-#define V_CBUFFER_OFFSET(cN, comp) ((cN)*16 + ((comp) == 'x' ? 0 : (comp) == 'y' ? 4 : (comp) == 'z' ? 8 : 12))
-#define V_ARRAY_OFFSET(cn, slot) ((cn)*16 + (slot)*16)
+// Sewer note: Read 16-byte aligned for perf.
+#define REGISTER_ALIGNMENT 16
+#define SC_REG_U(cN) vk::RawBufferLoad<uint4>(g_PushConstants.SharedConstants + (cN) * 16, REGISTER_ALIGNMENT)
+#define SC_REG_F(cN) vk::RawBufferLoad<float4>(g_PushConstants.SharedConstants + (cN) * 16, REGISTER_ALIGNMENT)
 
-#define texture2D_0   vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(0, 'x') )
-#define texture2D_1   vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(0, 'y') )
-#define texture2D_2   vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(0, 'z') )
-#define texture2D_3   vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(0, 'w') )
+#define texture2D_0   g_PushConstants.Texture2DIndices.x
+#define texture2D_1   g_PushConstants.Texture2DIndices.y
+#define texture2D_2   g_PushConstants.Texture2DIndices.z
+#define texture2D_3   g_PushConstants.Texture2DIndices.w
 
-#define texture3D_0   vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(4, 'x') )
+#define texture3D_0   g_PushConstants.Texture3DIndex
 
-#define textureCube_0   vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(8, 'x') )
+#define textureCube_0   g_PushConstants.TextureCubeIndex
 
 // two stages per register: stage i is at element (i >> 1), .xy for even, .zw for odd
-#define texCoordMin_(i) vk::RawBufferLoad<float4>(g_PushConstants.SharedConstants + V_ARRAY_OFFSET(89, i))
-#define texCoordMax_(i) vk::RawBufferLoad<float4>(g_PushConstants.SharedConstants + V_ARRAY_OFFSET(97, i))
+#define texCoordMin_(i) ((i) == 0 ? g_PushConstants.TexCoordMin01 : SC_REG_F(89 + (i)))
+#define texCoordMax_(i) ((i) == 0 ? g_PushConstants.TexCoordMax01 : SC_REG_F(97 + (i)))
 
-#define sampler_0  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(12, 'x') )
-#define sampler_1  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(12, 'y') )
-#define sampler_2  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(12, 'z') )
-#define sampler_3  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(12, 'w') )
+#define sampler_0  g_PushConstants.SamplerIndices.x
+#define sampler_1  g_PushConstants.SamplerIndices.y
+#define sampler_2  g_PushConstants.SamplerIndices.z
+#define sampler_3  g_PushConstants.SamplerIndices.w
 
-#define color_op_0  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(16, 'x') )
-#define color_op_1  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(16, 'y') )
-#define color_op_2  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(16, 'z') )
-#define color_op_3  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(16, 'w') )
+#define color_op_0  SC_REG_U(16).x
+#define color_op_1  SC_REG_U(16).y
+#define color_op_2  SC_REG_U(16).z
+#define color_op_3  SC_REG_U(16).w
 
-#define color_arg0_0  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(20, 'x') )
-#define color_arg0_1  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(20, 'y') )
-#define color_arg0_2  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(20, 'z') )
-#define color_arg0_3  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(20, 'w') )
+#define color_arg0_0  SC_REG_U(20).x
+#define color_arg0_1  SC_REG_U(20).y
+#define color_arg0_2  SC_REG_U(20).z
+#define color_arg0_3  SC_REG_U(20).w
 
-#define color_arg1_0  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(24, 'x') )
-#define color_arg1_1  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(24, 'y') )
-#define color_arg1_2  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(24, 'z') )
-#define color_arg1_3  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(24, 'w') )
+#define color_arg1_0  SC_REG_U(24).x
+#define color_arg1_1  SC_REG_U(24).y
+#define color_arg1_2  SC_REG_U(24).z
+#define color_arg1_3  SC_REG_U(24).w
 
-#define color_arg2_0  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(28, 'x') )
-#define color_arg2_1  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(28, 'y') )
-#define color_arg2_2  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(28, 'z') )
-#define color_arg2_3  vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(28, 'w') )
+#define color_arg2_0  SC_REG_U(28).x
+#define color_arg2_1  SC_REG_U(28).y
+#define color_arg2_2  SC_REG_U(28).z
+#define color_arg2_3  SC_REG_U(28).w
 
-#define alpha_op_0 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(32, 'x') )
-#define alpha_op_1 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(32, 'y') )
-#define alpha_op_2 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(32, 'z') )
-#define alpha_op_3 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(32, 'w') )
+#define alpha_op_0 SC_REG_U(32).x
+#define alpha_op_1 SC_REG_U(32).y
+#define alpha_op_2 SC_REG_U(32).z
+#define alpha_op_3 SC_REG_U(32).w
 
-#define alpha_arg0_0 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(36, 'x') )
-#define alpha_arg0_1 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(36, 'y') )
-#define alpha_arg0_2 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(36, 'z') )
-#define alpha_arg0_3 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(36, 'w') )
+#define alpha_arg0_0 SC_REG_U(36).x
+#define alpha_arg0_1 SC_REG_U(36).y
+#define alpha_arg0_2 SC_REG_U(36).z
+#define alpha_arg0_3 SC_REG_U(36).w
 
-#define alpha_arg1_0 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(40, 'x') )
-#define alpha_arg1_1 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(40, 'y') )
-#define alpha_arg1_2 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(40, 'z') )
-#define alpha_arg1_3 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(40, 'w') )
+#define alpha_arg1_0 SC_REG_U(40).x
+#define alpha_arg1_1 SC_REG_U(40).y
+#define alpha_arg1_2 SC_REG_U(40).z
+#define alpha_arg1_3 SC_REG_U(40).w
 
-#define alpha_arg2_0 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(44, 'x') )
-#define alpha_arg2_1 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(44, 'y') )
-#define alpha_arg2_2 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(44, 'z') )
-#define alpha_arg2_3 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(44, 'w') )
+#define alpha_arg2_0 SC_REG_U(44).x
+#define alpha_arg2_1 SC_REG_U(44).y
+#define alpha_arg2_2 SC_REG_U(44).z
+#define alpha_arg2_3 SC_REG_U(44).w
 
-#define result_arg_0 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(48, 'x') )
-#define result_arg_1 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(48, 'y') )
-#define result_arg_2 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(48, 'z') )
-#define result_arg_3 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(48, 'w') )
+#define result_arg_0 SC_REG_U(48).x
+#define result_arg_1 SC_REG_U(48).y
+#define result_arg_2 SC_REG_U(48).z
+#define result_arg_3 SC_REG_U(48).w
 
-#define TextureSampleType_0 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(52, 'x') )
-#define TextureSampleType_1 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(52, 'y') )
-#define TextureSampleType_2 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(52, 'z') )
-#define TextureSampleType_3 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(52, 'w') )
+#define TextureSampleType_0 SC_REG_U(52).x
+#define TextureSampleType_1 SC_REG_U(52).y
+#define TextureSampleType_2 SC_REG_U(52).z
+#define TextureSampleType_3 SC_REG_U(52).w
 
-#define bumpenvtmat00 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(56, 'x') )
-#define bumpenvtmat01 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(60, 'x') )
-#define bumpenvtmat11 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(64, 'x') )
-#define bumpenvtmat10 vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(68, 'x') )
-#define bumpenvlscale vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(72, 'x') )
-#define bumpenvloffset vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(76, 'x') )
+#define bumpenvtmat00 SC_REG_U(56).x
+#define bumpenvtmat01 SC_REG_U(60).x
+#define bumpenvtmat11 SC_REG_U(64).x
+#define bumpenvtmat10 SC_REG_U(68).x
+#define bumpenvlscale SC_REG_U(72).x
+#define bumpenvloffset SC_REG_U(76).x
 
-#define texcoordindex vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(80, 'x') )
+#define texcoordindex SC_REG_U(80).x
 
-#define TextureFactor vk::RawBufferLoad<float4>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(84, 'x') )
+#define TextureFactor SC_REG_F(84)
     
-#define SpecularEnable vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(85, 'x') )
-#define FogEnable vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(85, 'y') )
-#define FogTableMode vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(85, 'z') )
-#define FogDensity vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(85, 'w') )
+#define SpecularEnable SC_REG_U(85).x
+#define FogEnable SC_REG_U(85).y
+#define FogTableMode SC_REG_U(85).z
+#define FogDensity SC_REG_U(85).w
 
-#define FogStart vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(86, 'x') )
-#define FogEnd vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(86, 'y') )
-#define FogColor0 vk::RawBufferLoad<float>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(86, 'z') )
-#define FogColor1 vk::RawBufferLoad<float>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(86, 'w') )
-#define FogColor2 vk::RawBufferLoad<float>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(87, 'x') )
+#define FogStart g_PushConstants.C86.x
+#define FogEnd g_PushConstants.C86.y
+#define FogColor0 asfloat(g_PushConstants.C86.z)
+#define FogColor1 asfloat(g_PushConstants.C86.w)
+#define FogColor2 asfloat(g_PushConstants.C87.x)
 
-#define alphaTestEnable vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(87, 'y') )
-#define alphaFunc vk::RawBufferLoad<uint>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(87, 'z') )
-#define alphaRef vk::RawBufferLoad<float>(g_PushConstants.SharedConstants + V_CBUFFER_OFFSET(87, 'w') )
+#define alphaTestEnable g_PushConstants.C87.y
+#define alphaFunc g_PushConstants.C87.z
+#define alphaRef asfloat(g_PushConstants.C87.w)
 
 
 #else

@@ -34,32 +34,26 @@ struct TextureArgs
 static float4 TexCoords[4];
 
 
-bool HasFlag(float value, float flag)
+float4 GetArg(uint arg, TextureArgs ctx)
 {
-	// http://theinstructionlimit.com/encoding-boolean-flags-into-a-float-in-hlsl
-    return fmod(value, flag) >= flag / 2;
-}
+    // https://docs.microsoft.com/en-us/windows/win32/direct3d9/d3dta
+    bool alphaReplicate = (arg & 0x10) != 0; // X_D3DTA_ALPHAREPLICATE
+    bool complement = (arg & 0x08) != 0;     // X_D3DTA_COMPLEMENT
+    uint source = arg & 0xF;
 
-float4 GetArg(float arg, TextureArgs ctx)
-{
-	// https://docs.microsoft.com/en-us/windows/win32/direct3d9/d3dta
-    bool alphaReplicate = HasFlag(arg, X_D3DTA_ALPHAREPLICATE);
-    bool complement = HasFlag(arg, X_D3DTA_COMPLEMENT);
-    arg = arg % 16;
+    float4 o = 0;
 
-    float4 o;
-
-    if (arg == X_D3DTA_DIFFUSE)
+    if (source == X_D3DTA_DIFFUSE)
         o = ctx.DIFFUSE;
-    if (arg == X_D3DTA_CURRENT)
+    else if (source == X_D3DTA_CURRENT)
         o = ctx.CURRENT;
-    if (arg == X_D3DTA_TEXTURE)
+    else if (source == X_D3DTA_TEXTURE)
         o = ctx.TEXTURE;
-    if (arg == X_D3DTA_TFACTOR)
+    else if (source == X_D3DTA_TFACTOR)
         o = ctx.TFACTOR;
-    if (arg == X_D3DTA_SPECULAR)
+    else if (source == X_D3DTA_SPECULAR)
         o = ctx.SPECULAR;
-    if (arg == X_D3DTA_TEMP)
+    else if (source == X_D3DTA_TEMP)
         o = ctx.TEMP;
 
     if (alphaReplicate)
